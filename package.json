@@ -1,0 +1,28 @@
+{
+  "name": "discord-aio-selfbot",
+  "version": "1.0.0",
+  "description": "Terminal-based TUI Discord All-in-One Selfbot with 200+ commands",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js",
+    "console": "node src/cli/console.js",
+    "agent:cli": "node src/agent/cli/standalone.js",
+    "test": "node tests/test_full_suite.js"
+  },
+  "dependencies": {
+    "blessed": "^0.1.81",
+    "blessed-contrib": "^4.11.0",
+    "cookie-parser": "^1.4.7",
+    "discord.js-selfbot-v13": "^3.4.1",
+    "express": "^5.3.0"
+  },
+  "keywords": [
+    "discord",
+    "selfbot",
+    "tui",
+    "terminal"
+  ],
+  "author": "",
+  "license": "ISC"
+}

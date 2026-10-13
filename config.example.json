@@ -1,0 +1,62 @@
+{
+  "token": "YOUR_DISCORD_TOKEN_HERE",
+  "prefix": ".",
+  "deleteTriggerBeforeSend": true,
+  "autoDeleteMessages": {
+    "enabled": true,
+    "delay": 15000
+  },
+  "selfDelete": {
+    "enabled": false,
+    "delay": 3000
+  },
+  "afk": {
+    "enabled": false,
+    "reason": "AFK",
+    "since": null
+  },
+  "tui": {
+    "theme": "default",
+    "refreshInterval": 2000,
+    "logChat": true,
+    "logCommands": true,
+    "logEvents": true
+  },
+  "safety": {
+    "purgeDelay": 800,
+    "antiBanJitter": true,
+    "maxPurgeBatch": 100
+  },
+  "rpc": {
+    "enabled": false,
+    "type": "PLAYING",
+    "name": "Discord AIO TUI",
+    "details": "Terminal Selfbot",
+    "state": "Active",
+    "largeImage": "terminal",
+    "smallImage": "online"
+  },
+  "agent": {
+    "primaryProvider": "openrouter",
+    "fallbackProvider": "nvidia",
+    "openrouterApiKey": "",
+    "openrouterModel": "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "nvidiaApiKey": "",
+    "nvidiaModel": "nvidia/nemotron-3-ultra-550b-a55b",
+    "defaultModel": "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "defaultReasoning": "medium",
+    "autonomy": "confirm_actions",
+    "maxSteps": 8
+  },
+  "dashboard": {
+    "enabled": true,
+    "port": 8080,
+    "host": "0.0.0.0",
+    "adminToken": "admin",
+    "requirePassword": false
+  },
+  "webhookLogging": {
+    "enabled": false,
+    "deletedMessagesWebhookUrl": ""
+  }
+}

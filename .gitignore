@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Environment & Secrets
+.env
+.env.*
+config.json
+data/storage.json
+
+# Local data & caches
+data/agent_audit.log
+data/agent_sessions/
+data/backups/
+*.log
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db

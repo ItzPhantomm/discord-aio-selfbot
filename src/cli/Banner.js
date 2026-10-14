@@ -17,7 +17,7 @@ class Banner {
     const border = '━'.repeat(w);
 
     console.log(`\x1b[90m${border}\x1b[0m`);
-    console.log(`\x1b[1m\x1b[37m ⚡ DISCORD AIO // ACTIVE CLI COMMAND ENGINE\x1b[0m`);
+    console.log(`\x1b[1m\x1b[37m ⚡ FLAW // COMMAND CENTER ENGINE\x1b[0m`);
     console.log(`\x1b[90m${border}\x1b[0m`);
 
     const statusBadge = isOnline ? '\x1b[42m\x1b[30m\x1b[1m ONLINE \x1b[0m' : '\x1b[41m\x1b[30m\x1b[1m OFFLINE \x1b[0m';

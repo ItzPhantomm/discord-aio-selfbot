@@ -1,12 +1,13 @@
 <div align="center">
 
-# ⚡ DISCORD AIO // COMMAND CENTER
-### *High-performance terminal engine & anti-detection automation suite for Discord power users.*
+# ⚡ FLAW // COMMAND CENTER
+### *Acid-lime dark developer command center & user-installable Discord application.*
 
-**663 hand-crafted Discord commands, an autonomous multi-provider AI agent with auto-failover, byte-accurate Firefox fingerprint cloaking, and hierarchical rate limit buckets.**
+**User-installed Discord Components V2 frontend, 663 Discord commands, autonomous AI agent with auto-failover, Firefox fingerprint cloaking, and anti-detection suite.**
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18+-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![Discord.js](https://img.shields.io/badge/Discord.js--Selfbot--v13-3.4.1-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://github.com/aiko-chan-ai/discord.js-selfbot-v13)
+[![Discord.js](https://img.shields.io/badge/Discord.js--v14-14.27.0-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.js.org/)
+[![Selfbot Engine](https://img.shields.io/badge/Selfbot--Engine-v13-C8FF64?style=for-the-badge)](https://github.com/ItzPhantomm/discord-aio-selfbot)
 [![OpenRouter](https://img.shields.io/badge/OpenRouter-AI-6366F1?style=for-the-badge)](https://openrouter.ai/)
 [![NVIDIA NIM](https://img.shields.io/badge/NVIDIA-NIM-76B900?style=for-the-badge&logo=nvidia&logoColor=white)](https://build.nvidia.com/)
 [![License](https://img.shields.io/badge/License-MIT-white?style=for-the-badge)](LICENSE)
@@ -15,7 +16,7 @@
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│ [● ONLINE] User#1337 | Ping: 24ms | Channel: #general | Guilds: 48    │
+│ [● ONLINE] ItsLemon#0000 | Ping: 24ms | Channel: #general | Guilds: 48 │
 ├──────────────────┬─────────────────────────────────┬───────────────────┤
 │ ◈ NAVIGATION     │ ◈ ACTIVITY & EVENT FEED         │ ◈ INSPECTOR       │
 │ ├─ 🔥 OP (100)   │ [18:24:01] [OK]  .ping (14ms)   │ ◈ .STEALEMOJI     │
@@ -25,9 +26,9 @@
 │ ├─ 🧹 Purge (30)  │  ⚡ [TOOL CALL] get_server_info │ 128px lossless    │
 │ └─ 🛠️ Util (66)   │  └─ [OK] (150k members)         │ CDN asset URL.    │
 ├──────────────────┴─────────────────────────────────┴───────────────────┤
-│ ◈ ACTIVE CLI STREAM: npm start │ CLI Console: npm run console          │
+│ ◈ USER APP FRONTEND: /flaw (User-Installed Slash Command Interface)    │
 ├────────────────────────────────────────────────────────────────────────┤
-│ ❯ AI AGENT CLI: npm run agent:cli │ Discord Trigger: .agent <prompt>   │
+│ ❯ ACTIVE CLI STREAM: npm start │ CLI Console: npm run console          │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -37,7 +38,39 @@
 
 ## ⚡ The Punchline
 
-> Most Discord selfbots are either clunky Python scripts or bloated electron web dashboards that eat your RAM and leak your tokens. **Discord AIO** is different: an ultra-fast, zero-overhead, keyboard-first terminal engine engineered like a high-end Bloomberg terminal for Discord power users.
+> Most Discord tools are clunky, bot-detected scripts that leak tokens or get banned. **Flaw** is different: an official **Discord User-Installable Application frontend** powered by Components V2 paired with an ultra-hardened, zero-overhead execution engine engineered like a high-end developer command center.
+
+---
+
+## 🎮 Flaw User-Installed App Frontend (`/flaw`)
+
+Flaw can be user-installed on your personal Discord account and summoned anywhere across Discord—including DMs, group chats, and servers where the bot isn't even in the member list!
+
+### 1. Interactive Command Center Overview
+* Type **`/flaw`** anywhere to summon your personal control center.
+* **Header**: `FLAW / COMMAND CENTER` with version badge `v2.0` and personal toolkit subtext.
+* **Overview Metrics**:
+  - `Commands :: 663`
+  - `Modules :: 06`
+  - `Status :: ONLINE (ItsLemon#0000)`
+* **Module Selector**:
+  - **Utility** (Everyday tools and shortcuts)
+  - **Social & User** (Profiles and interactions)
+  - **Moderation** (Server management, bans, timeouts)
+  - **OP Powerhouse** (Reconnaissance and superweapons)
+  - **Developer Tools** (Technical utilities and encoders)
+  - **System & Config** (Preferences and webhooks)
+
+### 2. Interactive Command Explorer & Remote Execution
+* Select any module to browse its commands with page controls.
+* Pick any command from the interactive menu to open the syntax inspector.
+* Tap **`Run .<command>`** to execute the command directly on your selfbot and receive live output cards with execution duration metrics.
+* Type **`/exec command:<input>`** to dispatch commands with custom parameters remotely from any device.
+
+### 3. Strict Server-Side Authorization
+* Only user IDs explicitly designated in `config.json` (`ownerId` and `authorizedUsers`) can summon or interact with Flaw.
+* Every single button, select menu, and slash command is authenticated server-side before execution.
+* Unauthorized users are blocked with an ephemeral rejection and logged to the security audit feed.
 
 ---
 
@@ -92,7 +125,8 @@
 
 ### 1. Prerequisites
 * **Node.js v18 or higher** (Tested on Node.js v22).
-* A Discord user account token.
+* A Discord user account token (for selfbot engine).
+* A Discord bot application token (for user-installable frontend app).
 * *(Optional)* An [OpenRouter](https://openrouter.ai/) or [NVIDIA NIM](https://build.nvidia.com/) API key for AI agent reasoning.
 
 ### 2. Installation
@@ -108,22 +142,18 @@ Copy the template configuration file:
 cp config.example.json config.json
 ```
 
-Edit `config.json` with your Discord token and optional AI keys:
+Edit `config.json` with your Discord credentials:
 ```json
 {
-  "token": "YOUR_DISCORD_TOKEN_HERE",
+  "token": "YOUR_DISCORD_USER_TOKEN",
   "prefix": ".",
-  "autoDeleteMessages": {
+  "frontend": {
     "enabled": true,
-    "delay": 15000
-  },
-  "agent": {
-    "primaryProvider": "openrouter",
-    "fallbackProvider": "nvidia",
-    "openrouterApiKey": "sk-or-v1-...",
-    "openrouterModel": "nvidia/nemotron-3-ultra-550b-a55b:free",
-    "nvidiaApiKey": "",
-    "nvidiaModel": "nvidia/nemotron-3-ultra-550b-a55b"
+    "botToken": "YOUR_DISCORD_BOT_TOKEN",
+    "ownerId": "1449235608022286347",
+    "authorizedUsers": [
+      "1449235608022286347"
+    ]
   },
   "webhookLogging": {
     "enabled": false,
@@ -132,11 +162,9 @@ Edit `config.json` with your Discord token and optional AI keys:
 }
 ```
 
-*Tip: You can also leave `config.json` blank and run the selfbot—it will launch in safe preview mode and let you sync your token via `.tokenhelper`!*
-
 ### 4. Launch Modes
 ```bash
-# 1. Main Selfbot Output Stream
+# 1. Main Selfbot Output Stream & User App Frontend
 npm start
 
 # 2. Interactive CLI Console Prompt
@@ -150,11 +178,12 @@ npm run agent:cli
 
 ## 🧪 Automated Test Suite
 
-Every module, command, rate limiter, and provider failover is thoroughly covered by automated regression tests:
+Every module, command, rate limiter, and frontend interaction bridge is thoroughly covered by automated regression tests:
 ```bash
 npm test
 ```
-Runs 13 test suites verifying:
+Runs 14 test suites verifying:
+* Flaw User-Installable App authorization & Components V2 builder
 * Storage atomic writes & JSON persistence
 * Command tokenizer & dual-input context abstraction
 * Anti-Detection humanized pacing, typing simulation & 429 backoff

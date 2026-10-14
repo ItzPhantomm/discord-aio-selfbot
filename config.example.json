@@ -30,11 +30,19 @@
   "rpc": {
     "enabled": false,
     "type": "PLAYING",
-    "name": "Discord AIO TUI",
-    "details": "Terminal Selfbot",
+    "name": "Flaw",
+    "details": "Command Center",
     "state": "Active",
     "largeImage": "terminal",
     "smallImage": "online"
+  },
+  "frontend": {
+    "enabled": true,
+    "botToken": "YOUR_DISCORD_BOT_TOKEN_HERE",
+    "ownerId": "1449235608022286347",
+    "authorizedUsers": [
+      "1449235608022286347"
+    ]
   },
   "agent": {
     "primaryProvider": "openrouter",

@@ -4,6 +4,7 @@ const SelfClient = require('./client/SelfClient');
 const Banner = require('./cli/Banner');
 const Logger = require('./utils/Logger');
 const TokenGrabber = require('./utils/TokenGrabber');
+const FlawBotFrontend = require('./frontend/FlawBotFrontend');
 
 async function main() {
   const configPath = path.join(__dirname, '../config.json');
@@ -16,12 +17,27 @@ async function main() {
     }
   }
 
-  // Initialize Discord selfbot client
+  // Initialize Discord selfbot client (Flaw Engine)
   const selfClient = new SelfClient(config);
 
   // Load all command modules from src/commands
   const commandsDir = path.join(__dirname, 'commands');
   selfClient.commandHandler.loadCommandsFromDir(commandsDir);
+
+  // Initialize & Start Flaw User-Installable App Frontend
+  const frontendConfig = config.frontend || {};
+  const botToken = process.env.DISCORD_BOT_TOKEN || frontendConfig.botToken || config.botToken;
+  if (botToken) {
+    const flawFrontend = new FlawBotFrontend(selfClient, {
+      token: botToken,
+      ownerId: frontendConfig.ownerId || config.ownerId || '1449235608022286347',
+      authorizedUsers: frontendConfig.authorizedUsers || config.authorizedUsers || ['1449235608022286347']
+    });
+    selfClient.frontend = flawFrontend;
+    await flawFrontend.start();
+  } else {
+    Logger.info('Flaw User-Installable App Frontend waiting for botToken in config.json or DISCORD_BOT_TOKEN');
+  }
 
   // Start TokenGrabber background helper server for browser token acquisition
   const tokenGrabber = new TokenGrabber(49152);

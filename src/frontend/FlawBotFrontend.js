@@ -89,6 +89,26 @@ class FlawBotFrontend {
         );
         return interaction.editReply(payload);
       }
+
+      // Grouped Core Command Execution (e.g. /general1, /op3, /utility2, /moderation1, etc.)
+      const chosenCmd = interaction.options.getString('action');
+      if (chosenCmd) {
+        const optionalArgs = interaction.options.getString('args') || '';
+        const fullCmdStr = `${chosenCmd} ${optionalArgs}`.trim();
+        await interaction.deferReply({ ephemeral: true });
+
+        const start = Date.now();
+        const res = await this.executeOnSelfbot(fullCmdStr, interaction);
+        const duration = Date.now() - start;
+
+        const payload = FlawComponentsView.buildExecutionResult(
+          chosenCmd,
+          res.output,
+          duration,
+          res.success
+        );
+        return interaction.editReply(payload);
+      }
     }
 
     // 2. Select Menu Handling
@@ -215,6 +235,19 @@ class FlawBotFrontend {
 
     try {
       await this.bot.login(this.token);
+
+      // Auto-sync grouped slash commands to Discord on start
+      const SlashCommandRegistryBuilder = require('./SlashCommandRegistryBuilder');
+      SlashCommandRegistryBuilder.syncWithDiscord(
+        this.token,
+        this.bot.user.id,
+        this.selfClient.commandHandler
+      ).then(ok => {
+        if (ok) {
+          Logger.success('All core commands synced as user-installable slash command groups!');
+        }
+      }).catch(() => {});
+
       return true;
     } catch (err) {
       Logger.error(`Flaw frontend application login failed: ${err.message}`);

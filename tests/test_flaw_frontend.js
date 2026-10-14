@@ -50,7 +50,6 @@ async function testFrontend() {
   console.log(' Command syntax & parameter detail inspector view built cleanly.');
 
   // 5. Execution Bridge Test
-  let fakeOutput = null;
   const mockInteraction = {
     user: { id: '1449235608022286347', tag: 'ItsLemon#0000' }
   };
@@ -58,6 +57,15 @@ async function testFrontend() {
   assert.strictEqual(execResult.success, true);
   assert(execResult.output.includes('WebSocket Latency') || execResult.output.includes('Optimal'), 'Ping output must be returned');
   console.log(' Frontend to selfbot execution bridge verified cleanly.');
+
+  // 6. Slash Command Registry Groups Builder Test
+  const SlashCommandRegistryBuilder = require('../src/frontend/SlashCommandRegistryBuilder');
+  const slashCmds = SlashCommandRegistryBuilder.buildSlashCommands(selfClient.commandHandler);
+  assert(slashCmds.length >= 25, `Expected 25+ modular slash command groups, got ${slashCmds.length}`);
+  const opGroup = slashCmds.find(c => c.name.startsWith('op'));
+  assert(opGroup, 'Must have OP command group');
+  assert(opGroup.options && opGroup.options[0].choices.length > 0, 'Must have command choices');
+  console.log(` SlashCommandRegistryBuilder verified: ${slashCmds.length} modular slash command groups generated.`);
 
   console.log(' ALL FLAW BOT FRONTEND TESTS PASSED 100%!');
 }

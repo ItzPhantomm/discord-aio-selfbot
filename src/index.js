@@ -51,7 +51,7 @@ async function main() {
   });
 
   // Print Startup Output Banner
-  Banner.render(selfClient.client, selfClient.commandHandler);
+  Banner.render(selfClient.client, selfClient.commandHandler, selfClient.frontend);
 
   // Attempt login
   const token = process.env.DISCORD_TOKEN || config.token;

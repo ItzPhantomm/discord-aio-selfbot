@@ -35,7 +35,7 @@ class FlawBotFrontend {
   }
 
   setupEvents() {
-    this.bot.on('ready', () => {
+    this.bot.on('clientReady', () => {
       Logger.success(`Flaw User-Installable App Frontend online: ${this.bot.user.tag} (ID: ${this.bot.user.id})`);
     });
 

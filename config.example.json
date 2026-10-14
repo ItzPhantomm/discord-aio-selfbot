@@ -48,13 +48,6 @@
     "autonomy": "confirm_actions",
     "maxSteps": 8
   },
-  "dashboard": {
-    "enabled": true,
-    "port": 8080,
-    "host": "0.0.0.0",
-    "adminToken": "admin",
-    "requirePassword": false
-  },
   "webhookLogging": {
     "enabled": false,
     "deletedMessagesWebhookUrl": ""

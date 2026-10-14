@@ -62,20 +62,6 @@ async function runIntegrationSuite() {
   // Test reload
   await selfClient.commandHandler.execute(fakeCtx, 'reload');
 
-  // Verify Web Dashboard Subsystem
-  console.log('Testing Web Dashboard subsystem...');
-  const WebServer = require('../src/web/WebServer');
-  selfClient.config.dashboard = { port: 8085, host: '127.0.0.1', requirePassword: false };
-  const webServer = new WebServer(selfClient);
-  const webPort = await webServer.start();
-  assert(webPort > 0, 'WebServer must start on valid port');
-  const dashRes = await fetch(`http://127.0.0.1:${webPort}/api/dashboard`);
-  assert.strictEqual(dashRes.status, 200);
-  const dashData = await dashRes.json();
-  assert(dashData.counts.commands_total >= 660, 'Dashboard counts must reflect all commands');
-  await webServer.stop();
-  console.log(' Web Dashboard subsystem verified successfully.');
-
   console.log(' All representative command executions passed without error!');
   console.log('=== INTEGRATION TEST SUITE PASSED (100% GREEN) ===');
 }

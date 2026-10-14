@@ -4,7 +4,6 @@ const SelfClient = require('./client/SelfClient');
 const Banner = require('./cli/Banner');
 const Logger = require('./utils/Logger');
 const TokenGrabber = require('./utils/TokenGrabber');
-const WebServer = require('./web/WebServer');
 
 async function main() {
   const configPath = path.join(__dirname, '../config.json');
@@ -23,15 +22,6 @@ async function main() {
   // Load all command modules from src/commands
   const commandsDir = path.join(__dirname, 'commands');
   selfClient.commandHandler.loadCommandsFromDir(commandsDir);
-
-  // Start Production Web Dashboard Server (Nighty Control Center)
-  const webServer = new WebServer(selfClient);
-  selfClient.webServer = webServer;
-  try {
-    await webServer.start();
-  } catch (err) {
-    Logger.error(`Dashboard server failed to start: ${err.message}`);
-  }
 
   // Start TokenGrabber background helper server for browser token acquisition
   const tokenGrabber = new TokenGrabber(49152);

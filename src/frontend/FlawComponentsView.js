@@ -15,12 +15,19 @@ const FLAW_THEME = {
 };
 
 const MODULE_DEFINITIONS = [
-  { id: 'utility', label: 'Utility', desc: 'Everyday tools, snipes, and shortcuts' },
-  { id: 'social', label: 'Social & User', desc: 'Profiles, presence, friends and interactions' },
-  { id: 'moderation', label: 'Moderation', desc: 'Server management, bans, timeouts and kicks' },
-  { id: 'op', label: 'OP Powerhouse', desc: 'Ghost wipes, reconnaissance and superweapons' },
-  { id: 'developer', label: 'Developer Tools', desc: 'Technical utilities, encoders and builders' },
-  { id: 'system', label: 'System & Config', desc: 'Configuration, prefix, webhooks and safety' }
+  { id: 'utility', label: 'Utility', category: 'Utility', desc: 'Everyday tools, snipes, and shortcuts' },
+  { id: 'user', label: 'Social & User', category: 'User', desc: 'Profiles, presence, friends and interactions' },
+  { id: 'moderation', label: 'Moderation', category: 'Moderation', desc: 'Server management, bans, timeouts and kicks' },
+  { id: 'op', label: 'OP Powerhouse', category: 'OP', desc: 'Ghost wipes, reconnaissance and superweapons' },
+  { id: 'general', label: 'General', category: 'General', desc: 'User & server intelligence, avatars and bots' },
+  { id: 'purge', label: 'Purge', category: 'Purge', desc: 'Message cleaners, link purges and mass wipes' },
+  { id: 'automation', label: 'Automation', category: 'Automation', desc: 'Auto-responders, reactors and schedulers' },
+  { id: 'voice', label: 'Voice & RPC', category: 'RPC & Voice', desc: 'Spotify rich presence, streams and voice' },
+  { id: 'text', label: 'Text & Ciphers', category: 'Text', desc: 'Zalgo, mock, morse and formatting tools' },
+  { id: 'config', label: 'System & Config', category: 'Config', desc: 'Fast mode, prefixes, webhooks and safety' },
+  { id: 'developer', label: 'Developer Tools', category: 'Developer', desc: 'Technical utilities, encoders and builders' },
+  { id: 'crypto', label: 'Crypto & Hash', category: 'Crypto', desc: 'AES, SHA-256, RSA and cryptography' },
+  { id: 'fun', label: 'Fun & Casino', category: 'Fun', desc: 'Games, blackjack, slots, trivia and rizz' }
 ];
 
 class FlawComponentsView {
@@ -28,11 +35,13 @@ class FlawComponentsView {
    * Main Overview Menu matching the design reference screenshot
    */
   static buildOverview(commandHandler, selfClient) {
-    const totalCmds = commandHandler?.commands?.size || 663;
+    const totalCmds = commandHandler?.commands?.size || 664;
     const modulesCount = MODULE_DEFINITIONS.length;
     const isOnline = Boolean(selfClient?.client?.user);
     const userTag = isOnline ? selfClient.client.user.tag : 'Offline';
     const statusText = isOnline ? 'ONLINE' : 'CONNECTING';
+    const isFastMode = Boolean(selfClient?.config?.fastMode);
+    const modeBadge = isFastMode ? 'FAST MODE (INSTANT TEXT)' : 'NORMAL MODE (HUMAN TYPING)';
 
     const embed = new EmbedBuilder()
       .setColor(FLAW_THEME.ACCENT_COLOR)
@@ -42,26 +51,20 @@ class FlawComponentsView {
         `**OVERVIEW**\n` +
         `\`\`\`asciidoc\n` +
         `Commands :: ${totalCmds}\n` +
-        `Modules  :: 0${modulesCount}\n` +
+        `Modules  :: ${modulesCount < 10 ? '0' + modulesCount : modulesCount}\n` +
+        `Profile  :: ${modeBadge}\n` +
         `Status   :: ${statusText} (${userTag})\n` +
         `\`\`\`\n` +
         `**COMMAND MODULES**\n` +
-        `Select a module below to inspect commands, syntax, arguments, and live execution forms.`
+        `Select a module below to inspect commands (13 per page with interactive pagers).`
       )
       .setFooter({ text: 'Explore commands · inspect syntax · view examples' });
 
     // Category Select Menu
-    const selectOptions = MODULE_DEFINITIONS.map(m => {
-      let count = 0;
-      if (m.id === 'utility') count = (commandHandler?.categories?.get('Utility') || []).length;
-      else if (m.id === 'social') count = (commandHandler?.categories?.get('User') || []).length;
-      else if (m.id === 'moderation') count = (commandHandler?.categories?.get('Moderation') || []).length;
-      else if (m.id === 'op') count = (commandHandler?.categories?.get('OP') || []).length;
-      else if (m.id === 'developer') count = (commandHandler?.categories?.get('Developer') || []).length;
-      else if (m.id === 'system') count = (commandHandler?.categories?.get('Config') || []).length;
-
+    const selectOptions = MODULE_DEFINITIONS.slice(0, 25).map(m => {
+      const count = (commandHandler?.categories?.get(m.category) || []).length;
       return {
-        label: `${m.label} (${count || 10} CMD)`,
+        label: `${m.label} (${count} CMD)`,
         value: `mod_${m.id}`,
         description: m.desc.slice(0, 50)
       };
@@ -74,7 +77,12 @@ class FlawComponentsView {
 
     const row1 = new ActionRowBuilder().addComponents(selectMenu);
 
-    // Navigation buttons
+    // Fast Mode toggle button & navigation buttons
+    const btnModeToggle = new ButtonBuilder()
+      .setCustomId('flaw_toggle_mode')
+      .setLabel(isFastMode ? 'Mode: Fast (Instant)' : 'Mode: Normal (Typing)')
+      .setStyle(isFastMode ? ButtonStyle.Success : ButtonStyle.Secondary);
+
     const btnSearch = new ButtonBuilder()
       .setCustomId('flaw_search_modal')
       .setLabel('Search Commands')
@@ -90,69 +98,65 @@ class FlawComponentsView {
       .setLabel('Refresh')
       .setStyle(ButtonStyle.Secondary);
 
-    const row2 = new ActionRowBuilder().addComponents(btnSearch, btnExec, btnRefresh);
+    const row2 = new ActionRowBuilder().addComponents(btnModeToggle, btnSearch, btnExec, btnRefresh);
 
     return { embeds: [embed], components: [row1, row2] };
   }
 
   /**
    * Module Category Commands List View
+   * Exactly 13 commands per page with back-and-forth interactive navigation
    */
   static buildModuleList(moduleId, commandHandler, page = 0) {
     const mod = MODULE_DEFINITIONS.find(m => m.id === moduleId) || MODULE_DEFINITIONS[0];
-    let catKey = 'Utility';
-    if (mod.id === 'social') catKey = 'User';
-    else if (mod.id === 'moderation') catKey = 'Moderation';
-    else if (mod.id === 'op') catKey = 'OP';
-    else if (mod.id === 'developer') catKey = 'Developer';
-    else if (mod.id === 'system') catKey = 'Config';
+    const cmds = commandHandler?.categories?.get(mod.category) || [];
 
-    const cmds = commandHandler?.categories?.get(catKey) || [];
-    const pageSize = 15;
+    const pageSize = 13; // Exactly 13 commands per page
     const totalPages = Math.max(1, Math.ceil(cmds.length / pageSize));
     const safePage = Math.min(Math.max(0, page), totalPages - 1);
-    const pageCmds = cmds.slice(safePage * pageSize, (safePage + 1) * pageSize);
+    const startIndex = safePage * pageSize;
+    const pageCmds = cmds.slice(startIndex, startIndex + pageSize);
 
     const embed = new EmbedBuilder()
       .setColor(FLAW_THEME.ACCENT_COLOR)
       .setTitle(`FLAW / ${mod.label.toUpperCase()}`)
       .setDescription(
         `\`${mod.desc.toUpperCase()}\`\n\n` +
-        `**COMMANDS IN THIS MODULE (${cmds.length} TOTAL - PAGE ${safePage + 1}/${totalPages}):**\n` +
-        pageCmds.map((c, i) => `**\`${safePage * pageSize + i + 1}.\`** \`.${c.name}\` — ${c.description || 'No description.'}`).join('\n')
+        `**COMMANDS IN THIS MODULE (${cmds.length} TOTAL · PAGE ${safePage + 1}/${totalPages}):**\n\n` +
+        pageCmds.map((c, i) => `**\`${startIndex + i + 1}.\`** \`.${c.name}\` — ${c.description || 'No description provided.'}`).join('\n')
       )
-      .setFooter({ text: 'Pick a command from the dropdown below to inspect syntax & run' });
+      .setFooter({ text: `Page ${safePage + 1} of ${totalPages} · Select below to inspect syntax` });
 
-    // Command picker select menu (Discord limits to 25 options)
-    const selectOptions = pageCmds.slice(0, 25).map(c => ({
+    // Command picker select menu for the exact 13 commands on this page
+    const selectOptions = pageCmds.map(c => ({
       label: `.${c.name}`,
       value: `cmd_${c.name}`,
-      description: (c.description || 'No description.').slice(0, 50)
+      description: (c.description || 'No description provided.').slice(0, 50)
     }));
 
     const cmdSelect = new StringSelectMenuBuilder()
       .setCustomId('flaw_cmd_select')
-      .setPlaceholder('Inspect a specific command...')
+      .setPlaceholder(`Pick one of ${pageCmds.length} commands to inspect...`)
       .addOptions(selectOptions);
 
     const row1 = new ActionRowBuilder().addComponents(cmdSelect);
 
-    // Pagination & Navigation
+    // Pagination buttons (Back and Forth)
     const btnHome = new ButtonBuilder()
       .setCustomId('flaw_nav_home')
-      .setLabel('Home')
+      .setLabel('Main Menu')
       .setStyle(ButtonStyle.Secondary);
 
     const btnPrev = new ButtonBuilder()
       .setCustomId(`flaw_page_${mod.id}_${safePage - 1}`)
-      .setLabel('Previous')
-      .setStyle(ButtonStyle.Secondary)
+      .setLabel(`◀ Page ${safePage}`)
+      .setStyle(ButtonStyle.Primary)
       .setDisabled(safePage <= 0);
 
     const btnNext = new ButtonBuilder()
       .setCustomId(`flaw_page_${mod.id}_${safePage + 1}`)
-      .setLabel('Next')
-      .setStyle(ButtonStyle.Secondary)
+      .setLabel(`Page ${safePage + 2} ▶`)
+      .setStyle(ButtonStyle.Primary)
       .setDisabled(safePage >= totalPages - 1);
 
     const row2 = new ActionRowBuilder().addComponents(btnHome, btnPrev, btnNext);
@@ -185,7 +189,7 @@ class FlawComponentsView {
         `**Category:** \`${cmd.category || 'General'}\`\n` +
         `**Aliases:** \`${aliasesStr}\`\n` +
         `**Permissions:** \`${cmd.permissions && cmd.permissions.length ? cmd.permissions.join(', ') : 'Standard User'}\`\n` +
-        `**Cooldown:** \`${cmd.cooldown ? cmd.cooldown + 's' : '0s (Standard Jitter)'}\``
+        `**Cooldown:** \`${cmd.cooldown ? cmd.cooldown + 's' : '0s (Standard Pacing)'}\``
       )
       .setFooter({ text: 'Tap Run Now to execute this command directly on your selfbot' });
 
@@ -207,15 +211,15 @@ class FlawComponentsView {
   /**
    * Execution Result View
    */
-  static buildExecutionResult(cmdName, output, durationMs, success = true) {
+  static buildExecutionResult(cmdName, output, durationMs, success = true, isFastMode = false) {
     const embed = new EmbedBuilder()
       .setColor(success ? FLAW_THEME.ACCENT_COLOR : 0xFF4545)
       .setTitle(`FLAW / EXECUTION: .${cmdName}`)
       .setDescription(
         `\`\`\`\n${(output || 'Executed without output.').slice(0, 1900)}\n\`\`\`\n` +
-        `**Status:** \`${success ? 'SUCCESS' : 'FAILED'}\` | **Duration:** \`${durationMs}ms\``
+        `**Status:** \`${success ? 'SUCCESS' : 'FAILED'}\` | **Duration:** \`${durationMs}ms\` | **Profile:** \`${isFastMode ? 'Fast Mode' : 'Normal'}\``
       )
-      .setFooter({ text: 'Flaw Anti-Detection Pacing Queue Active' });
+      .setFooter({ text: 'Flaw Anti-Detection Pacing Active' });
 
     const btnHome = new ButtonBuilder()
       .setCustomId('flaw_nav_home')
@@ -228,4 +232,4 @@ class FlawComponentsView {
   }
 }
 
-module.exports = { FlawComponentsView, FLAW_THEME };
+module.exports = { FlawComponentsView, FLAW_THEME, MODULE_DEFINITIONS };

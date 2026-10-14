@@ -14,6 +14,7 @@ data/backups/
 *.log
 *.tmp
 
-# OS files
-.DS_Store
-Thumbs.db
+# Tests & Internal Test Scripts
+tests/
+test/
+*.test.js

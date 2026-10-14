@@ -79,7 +79,12 @@ class RateLimitBuckets {
   }
 
   // Enforces humanized pacing and bucket acquisition before sending a message
-  async acquireMessagePermission(channel, isDM = false, recipientId = null) {
+  async acquireMessagePermission(channel, isDM = false, recipientId = null, fastMode = false) {
+    if (fastMode) {
+      // Fast Mode: instant response text without wait/throttle jitter while preserving basic global safety
+      return true;
+    }
+
     // 1. Acquire global token
     await this.globalBucket.acquire(1);
 
@@ -118,8 +123,14 @@ class RateLimitBuckets {
    * - Emits typing indicator over HTTP/Gateway
    * - Humanized typing pause proportional to message text length
    */
-  async syncBeforeSend(channel, textContent = '') {
+  async syncBeforeSend(channel, textContent = '', fastMode = false) {
     if (!channel || typeof channel.sendTyping !== 'function') return;
+
+    if (fastMode) {
+      // Fast mode: immediate text response; emit typing concurrently without artificial delay
+      channel.sendTyping().catch(() => {});
+      return;
+    }
 
     try {
       // 1. Fire typing indicator (emits TYPING_START across WebSocket gateway)

@@ -4,6 +4,44 @@ const Logger = require('../../utils/Logger');
 
 module.exports = [
   {
+    name: 'switch',
+    category: 'Config',
+    description: 'Switch between Fast Mode (immediate command text response) and Normal Mode (human typing delay)',
+    usage: '.switch <fast|normal|status>',
+    aliases: ['mode', 'fastmode'],
+    run: async (ctx, args) => {
+      const fs = require('fs');
+      const configPath = require('path').join(__dirname, '../../../config.json');
+      let cfg = {};
+      try {
+        cfg = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      } catch {}
+
+      const sub = (args[0] || '').toLowerCase().trim();
+
+      if (!sub || sub === 'status') {
+        const mode = cfg.fastMode ? 'FAST MODE (Immediate text responses, zero typing delay)' : 'NORMAL MODE (Human typing simulation active)';
+        return ctx.reply(`[Flaw Mode] Current execution profile: **${mode}**\nUse \`.switch fast\` to enable instant text responses or \`.switch normal\` for human typing delays.`);
+      }
+
+      if (sub === 'fast' || sub === 'on' || sub === 'speed') {
+        cfg.fastMode = true;
+        fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2), 'utf-8');
+        if (ctx.client?.config) ctx.client.config.fastMode = true;
+        return ctx.reply('⚡ [Flaw Mode] **FAST MODE ACTIVATED**: Responses will be dispatched immediately with zero typing delay while preserving backend anti-detection.');
+      }
+
+      if (sub === 'normal' || sub === 'off' || sub === 'safe') {
+        cfg.fastMode = false;
+        fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2), 'utf-8');
+        if (ctx.client?.config) ctx.client.config.fastMode = false;
+        return ctx.reply('🛡️ [Flaw Mode] **NORMAL MODE ACTIVATED**: Human typing simulation and jitter pacing are fully engaged.');
+      }
+
+      return ctx.reply('Usage: `.switch fast` (instant response) or `.switch normal` (human typing delay)');
+    }
+  },
+  {
     name: 'snipewebhook',
     category: 'Config',
     description: 'Configure Discord webhook URL for deleted message logging (keeps terminal clean)',

@@ -85,7 +85,8 @@ class FlawBotFrontend {
           cmdStr.split(' ')[0],
           res.output,
           duration,
-          res.success
+          res.success,
+          Boolean(this.selfClient.config?.fastMode)
         );
         return interaction.editReply(payload);
       }
@@ -105,7 +106,8 @@ class FlawBotFrontend {
           chosenCmd,
           res.output,
           duration,
-          res.success
+          res.success,
+          Boolean(this.selfClient.config?.fastMode)
         );
         return interaction.editReply(payload);
       }
@@ -169,9 +171,31 @@ class FlawBotFrontend {
           cmdName,
           res.output,
           duration,
-          res.success
+          res.success,
+          Boolean(this.selfClient.config?.fastMode)
         );
         return interaction.editReply(payload);
+      }
+
+      if (interaction.customId === 'flaw_toggle_mode') {
+        const isFast = !Boolean(this.selfClient.config?.fastMode);
+        this.selfClient.config.fastMode = isFast;
+
+        // Persist to config.json
+        const fs = require('fs');
+        const path = require('path');
+        const configPath = path.join(__dirname, '../../config.json');
+        try {
+          const cfg = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+          cfg.fastMode = isFast;
+          fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2), 'utf-8');
+        } catch {}
+
+        const payload = FlawComponentsView.buildOverview(
+          this.selfClient.commandHandler,
+          this.selfClient
+        );
+        return interaction.update(payload);
       }
 
       if (interaction.customId === 'flaw_quick_exec') {

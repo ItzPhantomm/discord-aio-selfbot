@@ -1,13 +1,17 @@
 <div align="center">
 
 # ⚡ FLAW // COMMAND CENTER
-### *Acid-lime dark developer command center & user-installable Discord application.*
+### *Acid-Lime Developer Command Center & User-Installable Discord App*
 
-**User-installed Discord Components V2 frontend, 663 Discord commands, autonomous AI agent with auto-failover, Firefox fingerprint cloaking, and anti-detection suite.**
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=10,12,18,200,255,100&height=180&section=header&text=FLAW%20//%20COMMAND%20CENTER&fontSize=42&fontColor=ffffff&fontAlignY=38&desc=PERSONAL%20TOOLKIT%20·%20664+%20COMMANDS%20·%20COMPONENTS%20V2&descSize=14&descAlignY=58&descAlign=50" width="100%" />
+
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=16&duration=2500&pause=800&color=C8FF64&center=true&vCenter=true&width=680&lines=User-Installed+Discord+Application+(%2Fflaw);664%2B+Production+Commands+across+20+Categories;Native+Subcommands+(%2Fmoderation+ban%2C+%2Futility+calc);Acid-Lime+Components+V2+Interactive+Dashboard;Multi-Provider+Autonomous+AI+Agent+(OpenRouter+%2B+NVIDIA);Byte-Accurate+Firefox+Cloak+%2B+Anti-Detection+Suite)](https://git.io/typing-svg)
+
+<br/>
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18+-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Discord.js](https://img.shields.io/badge/Discord.js--v14-14.27.0-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.js.org/)
-[![Selfbot Engine](https://img.shields.io/badge/Selfbot--Engine-v13-C8FF64?style=for-the-badge)](https://github.com/ItzPhantomm/discord-aio-selfbot)
+[![Selfbot Engine](https://img.shields.io/badge/Flaw--Core-v2.0-C8FF64?style=for-the-badge&logoColor=black)](https://github.com/ItzPhantomm/discord-aio-selfbot)
 [![OpenRouter](https://img.shields.io/badge/OpenRouter-AI-6366F1?style=for-the-badge)](https://openrouter.ai/)
 [![NVIDIA NIM](https://img.shields.io/badge/NVIDIA-NIM-76B900?style=for-the-badge&logo=nvidia&logoColor=white)](https://build.nvidia.com/)
 [![License](https://img.shields.io/badge/License-MIT-white?style=for-the-badge)](LICENSE)
@@ -38,39 +42,73 @@
 
 ## ⚡ The Punchline
 
-> Most Discord tools are clunky, bot-detected scripts that leak tokens or get banned. **Flaw** is different: an official **Discord User-Installable Application frontend** powered by Components V2 paired with an ultra-hardened, zero-overhead execution engine engineered like a high-end developer command center.
+> Most Discord selfbots are clunky, bot-detected scripts that leak tokens or get banned. **Flaw** is different: an official **Discord User-Installable Application frontend** powered by Components V2 paired with an ultra-hardened, zero-overhead execution engine engineered like a high-end developer command center.
 
 ---
 
 ## 🎮 Flaw User-Installed App Frontend (`/flaw`)
 
-Flaw can be user-installed on your personal Discord account and summoned anywhere across Discord—including DMs, group chats, and servers where the bot isn't even in the member list!
+Flaw installs directly onto your personal Discord account and can be summoned anywhere across Discord—including DMs, group chats, and servers where the bot isn't even in the member list!
 
-### 1. Interactive Command Center Overview
-* Type **`/flaw`** anywhere to summon your personal control center.
-* **Header**: `FLAW / COMMAND CENTER` with version badge `v2.0` and personal toolkit subtext.
+```
+                    ┌──────────────────────────────────────────────┐
+                    │  [⚡] FLAW / COMMAND CENTER [v2.0]            │
+                    │  PERSONAL TOOLKIT · COMMAND INDEX            │
+                    ├──────────────────────────────────────────────┤
+                    │  Commands :: 664                             │
+                    │  Modules  :: 13                              │
+                    │  Profile  :: FAST MODE (INSTANT TEXT)        │
+                    │  Status   :: ONLINE (ItsLemon#0000)          │
+                    ├──────────────────────────────────────────────┤
+                    │  [ 📂 Select Module (13 cmds/page)...     ▼ ]│
+                    ├──────────────────────────────────────────────┤
+                    │  [Mode: Fast] [Search] [Execute] [Refresh]   │
+                    └──────────────────────────────────────────────┘
+```
+
+### 1. Interactive Command Center Overview (`/flaw`)
+* **Header**: `FLAW / COMMAND CENTER` with version badge `[v2.0]`.
 * **Overview Metrics**:
-  - `Commands :: 663`
-  - `Modules :: 06`
+  - `Commands :: 664`
+  - `Modules :: 13`
+  - `Profile :: FAST MODE (INSTANT TEXT)` / `NORMAL MODE (TYPING)`
   - `Status :: ONLINE (ItsLemon#0000)`
-* **Module Selector**:
-  - **Utility** (Everyday tools and shortcuts)
-  - **Social & User** (Profiles and interactions)
-  - **Moderation** (Server management, bans, timeouts)
-  - **OP Powerhouse** (Reconnaissance and superweapons)
-  - **Developer Tools** (Technical utilities and encoders)
-  - **System & Config** (Preferences and webhooks)
+* **Interactive Command Modules**:
+  - `Utility` (66 commands)
+  - `Social & User` (49 commands)
+  - `Moderation` (46 commands)
+  - `OP Powerhouse` (100 commands)
+  - `General` (49 commands)
+  - `Purge` (30 commands)
+  - `Automation` (36 commands)
+  - `Voice & RPC` (40 commands)
+  - `Text & Ciphers` (41 commands)
+  - `System & Config` (26 commands)
+  - `Developer Tools` (15 commands)
+  - `Crypto & Hash` (30 commands)
+  - `Fun & Casino` (51 commands)
 
-### 2. Interactive Command Explorer & Remote Execution
-* Select any module to browse its commands with page controls.
-* Pick any command from the interactive menu to open the syntax inspector.
-* Tap **`Run .<command>`** to execute the command directly on your selfbot and receive live output cards with execution duration metrics.
-* Type **`/exec command:<input>`** to dispatch commands with custom parameters remotely from any device.
+### 2. 13-CMD Interactive Pagination with Pagers
+* Exactly **13 commands per page** with real indices, syntax, and descriptions.
+* Interactive **`◀ Page N`** and **`Page N+1 ▶`** buttons let you page back and forth through any category seamlessly.
+* Companion dropdown updates automatically to inspect parameters for the 13 commands currently on screen.
+* Tap **`Run .<command>`** to execute immediately on your selfbot and receive execution output cards with duration metrics (`✓ 14ms`).
 
-### 3. Strict Server-Side Authorization
-* Only user IDs explicitly designated in `config.json` (`ownerId` and `authorizedUsers`) can summon or interact with Flaw.
-* Every single button, select menu, and slash command is authenticated server-side before execution.
-* Unauthorized users are blocked with an ephemeral rejection and logged to the security audit feed.
+### 3. Native Discord Subcommands
+Every single core command is registered as an official Discord subcommand with typed inputs:
+* `/moderation ban user:@target [reason:<text>]`
+* `/moderation kick user:@target [reason:<text>]`
+* `/moderation mute user:@target [minutes:<number>]`
+* `/utility calc expression:<math>`
+* `/general ping`
+* `/purge purge [count:<number>]`
+* `/op opghostping target:@user`
+* `/voice rpcspotify [title:<text>]`
+
+### 4. Fast Mode vs Normal Mode (`.switch`)
+* **Fast Mode**: Instantaneous command responses (`0ms` artificial typing wait) while maintaining background WebSocket typing signals.
+* **Normal Mode**: Human typing simulation with proportional jitter.
+* Toggle via chat (`.switch fast` / `.switch normal`) or via 1-tap button directly inside the `/flaw` overview!
 
 ---
 
@@ -82,9 +120,9 @@ Flaw can be user-installed on your personal Discord account and summoned anywher
 * **Dedicated AI Chat Session**: Run `npm run agent:cli` for an interactive terminal AI session with streaming tokens and specialist decomposition.
 
 ### 🥷 Stealth & Anti-Detection Architecture
-* **Byte-Accurate Firefox Fingerprint**: Emulates genuine Mozilla Firefox v136.0 on Windows with realistic headers and WebSocket properties.
-* **Live Discord Build Number Scraper**: Automatically pulls the latest production client build number directly from Discord web assets on startup.
-* **Hierarchical Token Bucket Rate Limiting**: Enforces separate rate limit buckets for Global API, Global DMs, Per-Recipient DMs, and Channel messages.
+* **Byte-Accurate Firefox Fingerprint**: Emulates genuine Mozilla Firefox v136.0 on Windows with realistic headers and WebSocket properties (`src/client/FingerprintCloak.js`).
+* **Live Discord Build Number Scraper**: Automatically pulls the latest production client build number directly from Discord web assets on startup (`src/client/BuildNumberPuller.js`).
+* **Hierarchical Token Bucket Rate Limiting**: Enforces separate rate limit buckets for Global API, Global DMs, Per-Recipient DMs, and Channel messages (`src/client/RateLimitBuckets.js`).
 * **Pre-Send Gateway Synchronization**: Emits typing indicators and applies humanized typing pauses before dispatching messages.
 * **Paced Humanized Deletion**: Enforces randomized human-like jitter (800ms - 1500ms) rather than robotic 0ms trigger deletion.
 * **Webhook Logger for Deleted Messages**: Deleted message snipes forward silently to a configured Discord webhook (`.snipewebhook <url>`), keeping your terminal clean.
@@ -94,7 +132,7 @@ Flaw can be user-installed on your personal Discord account and summoned anywher
 
 ---
 
-## 📂 Command Architecture (663 Commands across 20 Categories)
+## 📂 Command Architecture (664 Commands across 20 Categories)
 
 | Category | Count | Focus & Description |
 |---|:---:|---|
@@ -108,7 +146,7 @@ Flaw can be user-installed on your personal Discord account and summoned anywher
 | **🔊 RPC & Voice** | **40** | Fake Spotify presence with album covers, Twitch streaming badges, fake video/screen-share indicators, voice channel switchers, and WebRTC bitrate meters. |
 | **⚡ Automation** | **36** | High-velocity chat alerts, auto-responders, auto-reactors, autocopy user mirroring, and recurring channel broadcasters. |
 | **🧹 Purge** | **30** | Media purges, link purges, caps purges, numerical spam purges, bot message cleans, and bounded message ID wipes. |
-| **⚙️ Config** | **25** | Snipe webhook forwarder, model setup, TUI theme changers, RAM cache flushers, rate-limit safety toggles, and custom aliases. |
+| **⚙️ Config** | **26** | Fast mode toggle, snipe webhook forwarder, model setup, TUI theme changers, RAM cache flushers, rate-limit safety toggles, and custom aliases. |
 | **💾 Backup** | **20** | Full guild snapshot backups (roles, permissions, channels), emoji dumpers, and server layout cloners. |
 | **💻 Developer** | **15** | Conventional commit generators, Dockerfile templates, SQL table schemas, regex escapers, and cURL builders. |
 | **🌐 Web** | **15** | HTTP status codes, MIME headers, DNS lookups, URL parsing, and CDN signature audits. |
@@ -173,27 +211,6 @@ npm run console
 # 3. Dedicated AI Agent Chat Session
 npm run agent:cli
 ```
-
----
-
-## 🧪 Automated Test Suite
-
-Every module, command, rate limiter, and frontend interaction bridge is thoroughly covered by automated regression tests:
-```bash
-npm test
-```
-Runs 14 test suites verifying:
-* Flaw User-Installable App authorization & Components V2 builder
-* Storage atomic writes & JSON persistence
-* Command tokenizer & dual-input context abstraction
-* Anti-Detection humanized pacing, typing simulation & 429 backoff
-* Live Discord build number puller & Firefox fingerprint cloaking
-* Hierarchical token buckets for DMs and channels
-* Universal Secret Sanitizer credential redaction
-* Tool registry & SafetyGate permission boundaries
-* Multi-provider model search & automatic HTTP 429 failover
-* AgentEngine ReAct loop, specialist decomposition & cancellation
-* 663 verified commands with zero duplicate collisions
 
 ---
 

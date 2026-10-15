@@ -91,7 +91,41 @@ class FlawBotFrontend {
         return interaction.editReply(payload);
       }
 
-      // Grouped Core Command Execution (e.g. /general1, /op3, /utility2, /moderation1, etc.)
+      // Subcommand Execution (e.g. /moderation ban user:@user reason:test)
+      let subcommandName = null;
+      try {
+        subcommandName = interaction.options.getSubcommand(false);
+      } catch {}
+
+      if (subcommandName) {
+        // Collect all options passed to the subcommand
+        const optionValues = [];
+        if (interaction.options.data && interaction.options.data[0]?.options) {
+          for (const opt of interaction.options.data[0].options) {
+            if (opt.value !== undefined && opt.value !== null && opt.value !== '') {
+              optionValues.push(String(opt.value));
+            }
+          }
+        }
+
+        const fullCmdStr = `${subcommandName} ${optionValues.join(' ')}`.trim();
+        await interaction.deferReply({ ephemeral: true });
+
+        const start = Date.now();
+        const res = await this.executeOnSelfbot(fullCmdStr, interaction);
+        const duration = Date.now() - start;
+
+        const payload = FlawComponentsView.buildExecutionResult(
+          subcommandName,
+          res.output,
+          duration,
+          res.success,
+          Boolean(this.selfClient.config?.fastMode)
+        );
+        return interaction.editReply(payload);
+      }
+
+      // Backward compatible grouped option execution if ever called with 'action'
       const chosenCmd = interaction.options.getString('action');
       if (chosenCmd) {
         const optionalArgs = interaction.options.getString('args') || '';

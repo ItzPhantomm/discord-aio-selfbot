@@ -1,8 +1,13 @@
 /**
  * SlashCommandRegistryBuilder
- * Builds and registers modular group slash commands for all core Discord selfbot commands.
- * Grouped logically into 25-choice chunks so that every core command is individually
- * selectable with full auto-completion and argument input without hitting Discord limits.
+ * Builds and registers modular group slash commands with native Discord Subcommands.
+ * Commands appear directly as:
+ * /moderation ban user:@user reason:rule_violation
+ * /moderation kick user:@user
+ * /general ping
+ * /utility calc expression:10*5
+ *
+ * Each core category is partitioned into chunks of up to 25 SUB_COMMANDs (e.g. /moderation, /moderation2).
  */
 class SlashCommandRegistryBuilder {
   static getCoreCategories() {
@@ -21,6 +26,54 @@ class SlashCommandRegistryBuilder {
       'admin': ['Admin'],
       'fun': ['Fun']
     };
+  }
+
+  static parseUsageToOptions(usage, cmdName) {
+    if (!usage) return [];
+    const clean = usage.replace(/^\.+/, '').replace(new RegExp('^' + cmdName + '\\s*'), '').trim();
+    if (!clean) return [];
+
+    const paramRegex = /(<[^>]+>|\[[^\]]+\])/g;
+    const matches = clean.match(paramRegex);
+    if (!matches) {
+      if (clean.length > 0) {
+        return [{
+          name: 'input',
+          description: clean.slice(0, 100),
+          type: 3,
+          required: false
+        }];
+      }
+      return [];
+    }
+
+    const options = [];
+    const seenNames = new Set();
+
+    for (let i = 0; i < Math.min(matches.length, 5); i++) {
+      const m = matches[i];
+      const isRequired = m.startsWith('<');
+      let rawName = m.slice(1, -1).trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 32);
+      if (!rawName || !/^[a-z0-9_]+$/.test(rawName)) rawName = 'param_' + (i + 1);
+      while (seenNames.has(rawName)) rawName += '_' + (i + 1);
+      seenNames.add(rawName);
+
+      options.push({
+        name: rawName,
+        description: `Parameter ${m}`.slice(0, 100),
+        type: 3, // String type allows mentions (@user), numbers, IDs, and free text
+        required: isRequired
+      });
+    }
+
+    // Discord enforces that all required options must precede optional options
+    let hasOptional = false;
+    for (const opt of options) {
+      if (!opt.required) hasOptional = true;
+      else if (hasOptional) opt.required = false;
+    }
+
+    return options;
   }
 
   static buildSlashCommands(commandHandler) {
@@ -60,31 +113,26 @@ class SlashCommandRegistryBuilder {
 
       for (let i = 0; i < chunkCount; i++) {
         const chunk = cmds.slice(i * chunkSize, (i + 1) * chunkSize);
-        const cmdName = chunkCount === 1 ? groupName : `${groupName}${i + 1}`;
+        const rootName = (i === 0) ? groupName : `${groupName}${i + 1}`;
+
+        const subcommands = chunk.map(c => {
+          const subName = c.name.toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 32);
+          const subOptions = this.parseUsageToOptions(c.usage, c.name);
+          return {
+            name: subName,
+            description: (c.description || `Execute .${c.name}`).slice(0, 100),
+            type: 1, // SUB_COMMAND
+            options: subOptions
+          };
+        });
 
         slashPayloads.push({
-          name: cmdName,
-          description: `Flaw ${catList[0]} commands (Part ${i + 1}/${chunkCount})`,
+          name: rootName,
+          description: `Flaw ${catList[0]} subcommands (Group ${i + 1}/${chunkCount})`,
+          type: 1,
           integration_types: [0, 1],
           contexts: [0, 1, 2],
-          options: [
-            {
-              name: 'action',
-              description: 'Select command to execute',
-              type: 3, // STRING
-              required: true,
-              choices: chunk.map(c => ({
-                name: `.${c.name} - ${(c.description || '').slice(0, 70)}`.slice(0, 100),
-                value: c.name
-              }))
-            },
-            {
-              name: 'args',
-              description: 'Arguments/parameters for the command (optional)',
-              type: 3, // STRING
-              required: false
-            }
-          ]
+          options: subcommands
         });
       }
     }

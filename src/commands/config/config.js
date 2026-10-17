@@ -18,23 +18,39 @@ module.exports = [
       } catch {}
 
       const sub = (args[0] || '').toLowerCase().trim();
+      const selfClient = ctx.client?.selfClient;
+      const isCurrentlyFast = Boolean(ctx.client?.config?.fastMode || selfClient?.config?.fastMode || cfg.fastMode);
 
       if (!sub || sub === 'status') {
-        const mode = cfg.fastMode ? 'FAST MODE (Immediate text responses, zero typing delay)' : 'NORMAL MODE (Human typing simulation active)';
+        const mode = isCurrentlyFast ? 'FAST MODE (Immediate text responses, zero typing delay)' : 'NORMAL MODE (Human typing simulation active)';
         return ctx.reply(`[Flaw Mode] Current execution profile: **${mode}**\nUse \`.switch fast\` to enable instant text responses or \`.switch normal\` for human typing delays.`);
       }
 
       if (sub === 'fast' || sub === 'on' || sub === 'speed') {
-        cfg.fastMode = true;
-        fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2), 'utf-8');
-        if (ctx.client?.config) ctx.client.config.fastMode = true;
+        if (selfClient && typeof selfClient.setFastMode === 'function') {
+          selfClient.setFastMode(true);
+        } else {
+          cfg.fastMode = true;
+          fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2), 'utf-8');
+          if (ctx.client) {
+            if (!ctx.client.config) ctx.client.config = {};
+            ctx.client.config.fastMode = true;
+          }
+        }
         return ctx.reply('⚡ [Flaw Mode] **FAST MODE ACTIVATED**: Responses will be dispatched immediately with zero typing delay while preserving backend anti-detection.');
       }
 
       if (sub === 'normal' || sub === 'off' || sub === 'safe') {
-        cfg.fastMode = false;
-        fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2), 'utf-8');
-        if (ctx.client?.config) ctx.client.config.fastMode = false;
+        if (selfClient && typeof selfClient.setFastMode === 'function') {
+          selfClient.setFastMode(false);
+        } else {
+          cfg.fastMode = false;
+          fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2), 'utf-8');
+          if (ctx.client) {
+            if (!ctx.client.config) ctx.client.config = {};
+            ctx.client.config.fastMode = false;
+          }
+        }
         return ctx.reply('🛡️ [Flaw Mode] **NORMAL MODE ACTIVATED**: Human typing simulation and jitter pacing are fully engaged.');
       }
 

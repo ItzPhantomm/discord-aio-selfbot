@@ -31,10 +31,27 @@ class SelfClient {
       }
     });
     this.commandHandler = new CommandHandler(this.client);
+    this.client.config = this.config;
+    this.client.selfClient = this;
     this.activeChannel = null;
     this.tuiManager = null;
 
     this.setupEvents();
+  }
+
+  setFastMode(enabled) {
+    this.config.fastMode = Boolean(enabled);
+    if (this.client) this.client.config = this.config;
+    try {
+      const configPath = path.join(__dirname, '../../config.json');
+      if (fs.existsSync(configPath)) {
+        const cfg = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        cfg.fastMode = this.config.fastMode;
+        fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2), 'utf-8');
+      }
+    } catch (e) {}
+    Logger.info(`Fast Mode set to: ${this.config.fastMode ? 'ENABLED (Instant Text)' : 'DISABLED (Normal Human Pacing)'}`);
+    return this.config.fastMode;
   }
 
   setTui(tuiManager) {
@@ -90,14 +107,24 @@ class SelfClient {
           antiDetection: this.antiDetection
         });
 
-        // Anti-Detection: Schedule humanized trigger deletion (not robotic 0ms)
+        const isFastMode = Boolean(this.config.fastMode);
+
+        // Anti-Detection: Schedule trigger deletion
         if (this.config.deleteTriggerBeforeSend !== false && message.deletable) {
-          this.antiDetection.scheduleTriggerDelete(message);
+          if (isFastMode) {
+            // Fast Mode: delete trigger with minimal delay
+            message.delete().catch(() => {});
+          } else {
+            this.antiDetection.scheduleTriggerDelete(message);
+          }
         }
 
-        // Anti-Detection: Human typing simulation if enabled
-        if (this.config.safety?.humanTyping !== false && message.channel) {
+        // Anti-Detection: Human typing simulation if enabled and NOT in fast mode
+        if (!isFastMode && this.config.safety?.humanTyping !== false && message.channel) {
           await this.antiDetection.simulateTyping(message.channel, body.length);
+        } else if (isFastMode && message.channel?.sendTyping) {
+          // Fast Mode: fire-and-forget typing signal so Discord server logs typing without slowing down execution
+          message.channel.sendTyping().catch(() => {});
         }
 
         // Trigger execution

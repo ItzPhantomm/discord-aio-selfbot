@@ -212,18 +212,14 @@ class FlawBotFrontend {
       }
 
       if (interaction.customId === 'flaw_toggle_mode') {
-        const isFast = !Boolean(this.selfClient.config?.fastMode);
-        this.selfClient.config.fastMode = isFast;
-
-        // Persist to config.json
-        const fs = require('fs');
-        const path = require('path');
-        const configPath = path.join(__dirname, '../../config.json');
-        try {
-          const cfg = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-          cfg.fastMode = isFast;
-          fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2), 'utf-8');
-        } catch {}
+        const currentMode = Boolean(this.selfClient.config?.fastMode);
+        const newMode = !currentMode;
+        if (typeof this.selfClient.setFastMode === 'function') {
+          this.selfClient.setFastMode(newMode);
+        } else {
+          this.selfClient.config.fastMode = newMode;
+          if (this.selfClient.client) this.selfClient.client.config = this.selfClient.config;
+        }
 
         const payload = FlawComponentsView.buildOverview(
           this.selfClient.commandHandler,

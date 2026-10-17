@@ -29,13 +29,15 @@ class Context {
 
         const isDM = this.channel.type === 'DM';
         const recipientId = isDM ? (this.channel.recipient?.id || null) : null;
-        const fastMode = Boolean(this.client?.config?.fastMode);
+        const fastMode = Boolean(this.client?.config?.fastMode || this.client?.selfClient?.config?.fastMode);
 
         if (typeof content === 'object') {
           // Acquire token from rate limit bucket
           await RateLimitBuckets.acquireMessagePermission(this.channel, isDM, recipientId, fastMode);
           if (this.client?.config?.safety?.humanTyping !== false && !fastMode) {
             await RateLimitBuckets.syncBeforeSend(this.channel, 'payload', false);
+          } else if (fastMode && this.channel?.sendTyping) {
+            this.channel.sendTyping().catch(() => {});
           }
 
           const sent = await this.channel.send(content);
@@ -57,8 +59,10 @@ class Context {
           await RateLimitBuckets.acquireMessagePermission(this.channel, isDM, recipientId, fastMode);
 
           // In normal mode: simulate human typing pause. In fast mode: instant text response without delay
-          if (this.client?.config?.safety?.humanTyping !== false) {
-            await RateLimitBuckets.syncBeforeSend(this.channel, chunk, fastMode);
+          if (!fastMode && this.client?.config?.safety?.humanTyping !== false) {
+            await RateLimitBuckets.syncBeforeSend(this.channel, chunk, false);
+          } else if (fastMode && this.channel?.sendTyping) {
+            this.channel.sendTyping().catch(() => {});
           }
 
           const sent = await this.channel.send(chunk, options);

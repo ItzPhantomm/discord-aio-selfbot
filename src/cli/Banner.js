@@ -16,6 +16,9 @@ class Banner {
     const frontendOnline = Boolean(frontend?.bot?.user);
     const frontendTag = frontendOnline ? frontend.bot.user.tag : 'Connecting...';
 
+    const isFastMode = Boolean(client?.config?.fastMode || client?.selfClient?.config?.fastMode);
+    const modeBadge = isFastMode ? '\x1b[1m\x1b[92mFast Mode (Instant Text)\x1b[0m' : '\x1b[90mNormal Mode (Human Typing)\x1b[0m';
+
     const w = 76;
     const border = '━'.repeat(w);
 
@@ -26,7 +29,7 @@ class Banner {
     const statusBadge = isOnline ? '\x1b[42m\x1b[30m\x1b[1m ONLINE \x1b[0m' : '\x1b[41m\x1b[30m\x1b[1m OFFLINE \x1b[0m';
     console.log(` ${statusBadge}  \x1b[1m\x1b[37m${tag}\x1b[0m \x1b[90m(${id})\x1b[0m`);
     console.log(` \x1b[90m│\x1b[0m Ping: \x1b[1m\x1b[36m${ping}ms\x1b[0m │ Guilds: \x1b[1m\x1b[37m${guilds}\x1b[0m │ Open DMs: \x1b[1m\x1b[37m${dms}\x1b[0m │ Commands: \x1b[1m\x1b[32m${cmdsCount}\x1b[0m`);
-    console.log(` \x1b[90m│\x1b[0m Security: \x1b[32mSecret Sanitizer (Active)\x1b[0m │ Auto-Destruct: \x1b[33m15s Enabled\x1b[0m`);
+    console.log(` \x1b[90m│\x1b[0m Mode: ${modeBadge} │ Security: \x1b[32mSecret Sanitizer\x1b[0m`);
     console.log(` \x1b[90m│\x1b[0m User App Frontend: \x1b[1m\x1b[92m/flaw\x1b[0m (\x1b[1m\x1b[37m${frontendTag}\x1b[0m)`);
     console.log(`\x1b[90m${border}\x1b[0m`);
     console.log(` \x1b[90mOutput Stream:\x1b[0m Pure Live Output │ \x1b[1m\x1b[96mnpm run console\x1b[0m: Interactive CLI │ \x1b[1m\x1b[96mnpm run agent:cli\x1b[0m: AI Chat`);

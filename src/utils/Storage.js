@@ -70,6 +70,34 @@ class Storage {
         completed INTEGER DEFAULT 0,
         created_at INTEGER
       );
+
+      CREATE TABLE IF NOT EXISTS standing_goals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        instruction TEXT NOT NULL,
+        channel_id TEXT,
+        guild_id TEXT,
+        interval_sec INTEGER DEFAULT 300,
+        last_run INTEGER DEFAULT 0,
+        last_status TEXT,
+        created_at INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS user_memory (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS social_interactions (
+        user_id TEXT NOT NULL,
+        user_tag TEXT,
+        channel_id TEXT,
+        guild_id TEXT,
+        message_count INTEGER DEFAULT 1,
+        last_interaction INTEGER NOT NULL,
+        PRIMARY KEY (user_id, guild_id)
+      );
     `);
   }
 
@@ -191,6 +219,98 @@ class Storage {
       newContent: r.new_content,
       timestamp: r.timestamp
     }));
+  }
+
+  // --- Standing Goals API ---
+
+  addStandingGoal(goal) {
+    const stmt = this.db.prepare(`
+      INSERT INTO standing_goals (title, instruction, channel_id, guild_id, interval_sec, last_run, last_status, created_at)
+      VALUES (?, ?, ?, ?, ?, 0, 'Pending', ?)
+    `);
+    const info = stmt.run(
+      goal.title,
+      goal.instruction,
+      goal.channelId || null,
+      goal.guildId || null,
+      goal.intervalSec || 300,
+      Date.now()
+    );
+    return { id: info.lastInsertRowid, ...goal };
+  }
+
+  getActiveStandingGoals() {
+    return this.db.prepare('SELECT * FROM standing_goals ORDER BY id ASC').all();
+  }
+
+  updateStandingGoalRun(id, status) {
+    this.db.prepare('UPDATE standing_goals SET last_run = ?, last_status = ? WHERE id = ?').run(Date.now(), status, id);
+  }
+
+  deleteStandingGoal(id) {
+    const res = this.db.prepare('DELETE FROM standing_goals WHERE id = ?').run(id);
+    return res.changes > 0;
+  }
+
+  // --- Cross-Session Agent Memory API ---
+
+  setMemory(key, value) {
+    const serialized = typeof value === 'object' ? JSON.stringify(value) : String(value);
+    this.db.prepare('INSERT OR REPLACE INTO user_memory (key, value, updated_at) VALUES (?, ?, ?)').run(key, serialized, Date.now());
+  }
+
+  getMemory(key, defaultValue = null) {
+    const row = this.db.prepare('SELECT value FROM user_memory WHERE key = ?').get(key);
+    if (!row) return defaultValue;
+    try {
+      return JSON.parse(row.value);
+    } catch {
+      return row.value;
+    }
+  }
+
+  getAllMemory() {
+    const rows = this.db.prepare('SELECT key, value, updated_at FROM user_memory ORDER BY updated_at DESC').all();
+    const map = {};
+    for (const r of rows) {
+      try {
+        map[r.key] = JSON.parse(r.value);
+      } catch {
+        map[r.key] = r.value;
+      }
+    }
+    return map;
+  }
+
+  // --- Social Graph & Interaction Analytics API ---
+
+  recordInteraction(userId, userTag, channelId, guildId) {
+    const stmt = this.db.prepare(`
+      INSERT INTO social_interactions (user_id, user_tag, channel_id, guild_id, message_count, last_interaction)
+      VALUES (?, ?, ?, ?, 1, ?)
+      ON CONFLICT(user_id, guild_id) DO UPDATE SET
+        message_count = message_count + 1,
+        user_tag = excluded.user_tag,
+        channel_id = excluded.channel_id,
+        last_interaction = excluded.last_interaction
+    `);
+    stmt.run(userId, userTag || 'Unknown', channelId || null, guildId || 'global', Date.now());
+  }
+
+  getTopInteractions(limit = 10, guildId = null) {
+    if (guildId) {
+      return this.db.prepare(`
+        SELECT user_id, user_tag, message_count, last_interaction
+        FROM social_interactions WHERE guild_id = ?
+        ORDER BY message_count DESC LIMIT ?
+      `).all(guildId, limit);
+    }
+    return this.db.prepare(`
+      SELECT user_id, user_tag, SUM(message_count) as total_messages, MAX(last_interaction) as last_seen
+      FROM social_interactions
+      GROUP BY user_id
+      ORDER BY total_messages DESC LIMIT ?
+    `).all(limit);
   }
 
   // --- Universal Backwards-Compatible API (get, set, delete, has, push) ---

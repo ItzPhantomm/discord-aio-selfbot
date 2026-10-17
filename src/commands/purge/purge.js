@@ -19,11 +19,18 @@ module.exports = [
     aliases: ['purgeme', 'clear'],
     run: async (ctx, args) => {
       if (!ctx.channel) return ctx.reply('❌ Channel required.');
-      const limit = parseInt(args[0], 10) || 5;
-      isPurgeStopped = false;
+      const isPreview = args.includes('--preview') || args.includes('-p');
+      const cleanArgs = args.filter(a => a !== '--preview' && a !== '-p');
+      const limit = parseInt(cleanArgs[0], 10) || 5;
+
       const msgs = await ctx.channel.messages.fetch({ limit: Math.min(limit * 3, 100) });
       const myMsgs = msgs.filter(m => m.author.id === ctx.client?.user?.id).first(limit);
-      
+
+      if (isPreview) {
+        return ctx.reply(`🛡️ **DRY-RUN PREVIEW (.purge ${limit})**:\n* Matching Messages: \`${myMsgs.length}\`\n* Destination: <#${ctx.channel.id}>\n* Action: No messages were deleted (Dry-run safety preview). Run without \`--preview\` to execute.`);
+      }
+
+      isPurgeStopped = false;
       let deleted = 0;
       for (const m of myMsgs) {
         if (isPurgeStopped) break;

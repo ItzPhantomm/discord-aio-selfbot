@@ -78,6 +78,16 @@ class SelfClient {
         this.activeChannel = message.channel;
       }
 
+      // Record interaction in SQLite social intelligence graph
+      if (message.author && !message.author.bot) {
+        Storage.recordInteraction(
+          message.author.id,
+          message.author.tag || message.author.username,
+          message.channel?.id,
+          message.guild?.id || 'dm'
+        );
+      }
+
       // Snipe tracking: AFK mentions
       if (this.config.afk && this.config.afk.enabled && message.author.id !== this.client.user?.id) {
         if (message.mentions.has(this.client.user)) {

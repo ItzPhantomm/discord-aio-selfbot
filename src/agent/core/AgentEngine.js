@@ -20,12 +20,19 @@ class AgentEngine {
     const channelName = ctx?.channel ? (ctx.channel.name || 'DM') : 'None';
     const userTag = ctx?.author ? (ctx.author.tag || ctx.author.username) : 'Owner';
 
+    // Inject cross-session persistent memory from SQLite
+    const Storage = require('../../utils/Storage');
+    const memory = Storage.getAllMemory();
+    const memorySnippet = Object.keys(memory).length > 0
+      ? `\nCross-Session Memory & Standing Context:\n${JSON.stringify(memory, null, 2)}\n`
+      : '';
+
     return `You are an elite, highly capable Discord Autonomous Operations Agent powered by DeepSeek Harness with OpenRouter & NVIDIA NIM Multi-Provider Intelligence.
 Current Environment:
 - Active User: ${userTag}
 - Current Guild: ${guildName}
 - Current Channel: #${channelName}
-- Autonomy Policy: ${this.toolRegistry.safetyGate.autonomy.toUpperCase()}
+- Autonomy Policy: ${this.toolRegistry.safetyGate.autonomy.toUpperCase()}${memorySnippet}
 
 Mission Guidelines:
 1. Interpret user requests systematically. Deconstruct complex multi-step objectives into logical phases.

@@ -4,6 +4,35 @@ const TokenGrabber = require('../../utils/TokenGrabber');
 
 module.exports = [
   {
+    name: 'socialgraph',
+    category: 'User',
+    description: 'Inspect your real-time social interaction intelligence graph from local SQLite analytics',
+    usage: '.socialgraph [server]',
+    aliases: ['topfriends', 'interactions', 'socialintel'],
+    run: async (ctx, args) => {
+      const isGuildOnly = args[0] === 'server' || args[0] === 'guild';
+      const guildId = isGuildOnly && ctx.guild ? ctx.guild.id : null;
+      const rows = Storage.getTopInteractions(10, guildId);
+
+      if (!rows || rows.length === 0) {
+        return ctx.reply('📊 **Social Intelligence Graph**: No message traffic recorded yet in local database.');
+      }
+
+      let text = `### 📊 SOCIAL INTERACTION GRAPH ${guildId ? `(#${ctx.guild.name})` : '(GLOBAL)'}\n`;
+      text += '> Derived deterministically from live message traffic without external tracking:\n\n';
+
+      rows.forEach((r, i) => {
+        const count = r.total_messages || r.message_count;
+        const lastSeen = r.last_seen || r.last_interaction;
+        const timeAgo = Math.round((Date.now() - lastSeen) / 60000);
+        const timeStr = timeAgo < 60 ? `${timeAgo}m ago` : `${Math.round(timeAgo / 60)}h ago`;
+        text += `**\`${i + 1}.\`** **${r.user_tag}** (\`${r.user_id}\`) — **${count}** interactions · *${timeStr}*\n`;
+      });
+
+      return ctx.reply(text);
+    }
+  },
+  {
     name: 'setstatus',
     category: 'User',
     description: 'Change presence status (online, idle, dnd, invisible)',

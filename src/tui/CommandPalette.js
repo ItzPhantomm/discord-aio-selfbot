@@ -81,6 +81,14 @@ class CommandPalette {
       if (match) {
         this.hide();
         this.onSelect(match[1]);
+        return;
+      }
+
+      // Check if user selected the natural language AI agent option
+      const aiMatch = raw.match(/AI Agent:\s*"([^"]+)"/i);
+      if (aiMatch) {
+        this.hide();
+        this.onSelect(`agent ${aiMatch[1]}`);
       }
     });
 
@@ -94,11 +102,20 @@ class CommandPalette {
 
   filterCommands(query = '') {
     const matched = [];
+    const cleanQuery = query.toLowerCase().trim();
+
+    // Fast-path deterministic search across commands & descriptions
     for (const [name, cmd] of this.commandHandler.commands.entries()) {
-      if (!query || name.includes(query) || (cmd.description && cmd.description.toLowerCase().includes(query))) {
+      if (!cleanQuery || name.includes(cleanQuery) || (cmd.description && cmd.description.toLowerCase().includes(cleanQuery))) {
         matched.push(`.${name} - ${Theme.color(cmd.description || '', Theme.palette.textMuted)}`);
       }
     }
+
+    // Natural-language AI Agent fallback option if query does not cleanly match or user asks a question
+    if (cleanQuery && (matched.length === 0 || cleanQuery.includes(' ') || cleanQuery.length > 15)) {
+      matched.unshift(`🤖 AI Agent: "${cleanQuery}" (Run ReAct autonomous synthesis)`);
+    }
+
     this.list.setItems(matched.slice(0, 50));
     this.screen.render();
   }

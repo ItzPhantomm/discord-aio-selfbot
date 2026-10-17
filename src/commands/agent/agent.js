@@ -194,6 +194,85 @@ module.exports = [
     }
   },
   {
+    name: 'agentmemory',
+    category: 'General',
+    description: 'Inspect or configure cross-session persistent agent memory in SQLite',
+    usage: '.agentmemory [set|get|clear|all] [key] [value]',
+    aliases: ['aimemory', 'memory'],
+    run: async (ctx, args) => {
+      const Storage = require('../../utils/Storage');
+      const action = args[0]?.toLowerCase();
+
+      if (action === 'set' && args[1]) {
+        const key = args[1];
+        const val = args.slice(2).join(' ');
+        Storage.setMemory(key, val);
+        return ctx.reply(`🧠 **Agent Memory Saved**: \`${key}\` ➔ "${val}"`);
+      }
+
+      if (action === 'get' && args[1]) {
+        const val = Storage.getMemory(args[1]);
+        return ctx.reply(`🧠 **Agent Memory [${args[1]}]**: ${val !== null ? JSON.stringify(val) : '*Not found*'}`);
+      }
+
+      const all = Storage.getAllMemory();
+      const keys = Object.keys(all);
+      if (keys.length === 0) {
+        return ctx.reply('🧠 **Agent Memory**: No persistent cross-session memories saved yet. Use `.agentmemory set <key> <value>`.');
+      }
+
+      let text = `### 🧠 PERSISTENT AGENT MEMORY (${keys.length} ENTRIES)\n`;
+      keys.forEach(k => {
+        text += `* **\`${k}\`**: ${JSON.stringify(all[k])}\n`;
+      });
+      return ctx.reply(text);
+    }
+  },
+  {
+    name: 'standinggoals',
+    category: 'General',
+    description: 'Manage persistent standing goals and scheduled instructions for the ReAct agent',
+    usage: '.standinggoals [add|list|delete|start|stop] [args...]',
+    aliases: ['goals', 'standinggoal'],
+    run: async (ctx, args) => {
+      const StandingGoalsManager = require('../../agent/core/StandingGoalsManager');
+      const orch = getOrchestrator();
+      StandingGoalsManager.setEngine(orch.engine);
+
+      const action = args[0]?.toLowerCase();
+
+      if (action === 'add' && args.length > 1) {
+        const instruction = args.slice(1).join(' ');
+        const goal = StandingGoalsManager.addGoal({
+          title: instruction.slice(0, 30),
+          instruction,
+          channelId: ctx.channel?.id,
+          guildId: ctx.guild?.id,
+          intervalSec: 300
+        });
+        StandingGoalsManager.start(ctx);
+        return ctx.reply(`🎯 **Standing Goal Registered [ID ${goal.id}]**:\n* Title: \`${goal.title}\`\n* Interval: \`5 minutes\`\n* Standing instruction is now active in background.`);
+      }
+
+      if (action === 'delete' && args[1]) {
+        const id = parseInt(args[1], 10);
+        StandingGoalsManager.deleteGoal(id);
+        return ctx.reply(`🎯 **Standing Goal [ID ${id}]** removed.`);
+      }
+
+      const goals = StandingGoalsManager.listGoals();
+      if (goals.length === 0) {
+        return ctx.reply('🎯 **Standing Goals**: No active standing instructions. Use `.standinggoals add <instruction>` to register a persistent background monitor.');
+      }
+
+      let text = `### 🎯 ACTIVE STANDING GOALS (${goals.length})\n`;
+      goals.forEach(g => {
+        text += `* **[ID ${g.id}]** \`${g.title}\` (Every ${Math.round(g.interval_sec / 60)}m) · Last Status: *${g.last_status || 'Pending'}*\n  > ${g.instruction}\n`;
+      });
+      return ctx.reply(text);
+    }
+  },
+  {
     name: 'agenttools',
     category: 'General',
     description: 'List all structured Discord tools available to the AI Agent',

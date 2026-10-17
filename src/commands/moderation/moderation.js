@@ -21,9 +21,16 @@ module.exports = [
     usage: '.ban <user> [reason]',
     run: async (ctx, args) => {
       if (!ctx.guild) return ctx.reply('❌ Guild required.');
-      const user = ctx.guild.members.cache.get(args[0]?.replace(/[<@!>]/g, ''));
+      const isPreview = args.includes('--preview') || args.includes('-p');
+      const cleanArgs = args.filter(a => a !== '--preview' && a !== '-p');
+      const user = ctx.guild.members.cache.get(cleanArgs[0]?.replace(/[<@!>]/g, ''));
       if (!user) return ctx.reply('❌ User not found.');
-      await user.ban({ reason: args.slice(1).join(' ') || 'Banned by selfbot' });
+
+      if (isPreview) {
+        return ctx.reply(`🛡️ **DRY-RUN PREVIEW (.ban)**:\n* Target: **${user.user.tag}** (\`${user.id}\`)\n* Server: **${ctx.guild.name}**\n* Reason: ${cleanArgs.slice(1).join(' ') || 'Banned by selfbot'}\n* Action: Member was NOT banned (Safety dry-run mode). Run without \`--preview\` to execute.`);
+      }
+
+      await user.ban({ reason: cleanArgs.slice(1).join(' ') || 'Banned by selfbot' });
       return ctx.reply(`🔨 Banned **${user.user.tag}**`);
     }
   },

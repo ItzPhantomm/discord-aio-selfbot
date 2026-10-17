@@ -30,12 +30,13 @@ class Context {
         const isDM = this.channel.type === 'DM';
         const recipientId = isDM ? (this.channel.recipient?.id || null) : null;
         const fastMode = Boolean(this.client?.config?.fastMode || this.client?.selfClient?.config?.fastMode);
+        const buckets = this.client?.rateLimitBuckets || this.client?.selfClient?.rateLimitBuckets || RateLimitBuckets.default;
 
         if (typeof content === 'object') {
           // Acquire token from rate limit bucket
-          await RateLimitBuckets.acquireMessagePermission(this.channel, isDM, recipientId, fastMode);
+          await buckets.acquireMessagePermission(this.channel, isDM, recipientId, fastMode);
           if (this.client?.config?.safety?.humanTyping !== false && !fastMode) {
-            await RateLimitBuckets.syncBeforeSend(this.channel, 'payload', false);
+            await buckets.syncBeforeSend(this.channel, 'payload', false);
           } else if (fastMode && this.channel?.sendTyping) {
             this.channel.sendTyping().catch(() => {});
           }
@@ -49,18 +50,31 @@ class Context {
           return sent;
         }
 
-        // Sanitize any secrets before dispatching into Discord
-        const sanitized = SecretSanitizer.sanitize(String(content));
+        // Pre-send guard: inspect raw content pre-chunking to ensure split chunks cannot leak tokens
+        const rawContent = typeof content === 'object' ? JSON.stringify(content) : String(content);
+        if (SecretSanitizer.containsSecret(rawContent)) {
+          Logger.warn('Pre-send guard: Message contains sensitive credentials and was redacted pre-chunking.');
+        }
+
+        // Sanitize all secrets across the entire raw payload before splitting
+        const sanitized = SecretSanitizer.sanitize(rawContent);
+
+        // Fail-safe: if sanitized output still contains secrets, refuse to send
+        if (SecretSanitizer.containsSecret(sanitized)) {
+          Logger.error('Critical Security Guard: Message could not be fully sanitized. Blocked from outbound transmission.');
+          return null;
+        }
+
         const chunks = splitMessage(sanitized, { maxLength: 1900 });
         const sentMessages = [];
 
         for (const chunk of chunks) {
           // Acquire token from hierarchical rate limit bucket (Global, DM, Recipient, Channel)
-          await RateLimitBuckets.acquireMessagePermission(this.channel, isDM, recipientId, fastMode);
+          await buckets.acquireMessagePermission(this.channel, isDM, recipientId, fastMode);
 
           // In normal mode: simulate human typing pause. In fast mode: instant text response without delay
           if (!fastMode && this.client?.config?.safety?.humanTyping !== false) {
-            await RateLimitBuckets.syncBeforeSend(this.channel, chunk, false);
+            await buckets.syncBeforeSend(this.channel, chunk, false);
           } else if (fastMode && this.channel?.sendTyping) {
             this.channel.sendTyping().catch(() => {});
           }

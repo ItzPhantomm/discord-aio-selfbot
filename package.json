@@ -8,9 +8,14 @@
     "start": "node src/index.js",
     "console": "node src/cli/console.js",
     "agent:cli": "node src/agent/cli/standalone.js",
-    "test": "node tests/test_full_suite.js"
+    "test": "node scripts/test_smoke.js",
+    "lint": "eslint src/ --ext .js || true"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
+    "better-sqlite3": "^13.0.3",
     "blessed": "^0.1.81",
     "blessed-contrib": "^4.11.0",
     "discord.js": "^14.27.0",

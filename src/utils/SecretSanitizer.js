@@ -34,6 +34,16 @@ class SecretSanitizer {
 
     return text;
   }
+
+  containsSecret(input) {
+    if (input === null || input === undefined) return false;
+    const text = typeof input === 'string' ? input : JSON.stringify(input);
+    for (const pat of this.patterns) {
+      pat.lastIndex = 0;
+      if (pat.test(text)) return true;
+    }
+    return false;
+  }
 }
 
 module.exports = new SecretSanitizer();

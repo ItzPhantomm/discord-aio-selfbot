@@ -20,9 +20,10 @@ async function main() {
   // Initialize Discord selfbot client (Flaw Engine)
   const selfClient = new SelfClient(config);
 
-  // Load all command modules from src/commands
+  // Load all command modules from src/commands and start hot-reload watcher
   const commandsDir = path.join(__dirname, 'commands');
   selfClient.commandHandler.loadCommandsFromDir(commandsDir);
+  selfClient.commandHandler.watchCommandsDir(commandsDir);
 
   // Initialize & Start Flaw User-Installable App Frontend
   const frontendConfig = config.frontend || {};
@@ -39,23 +40,32 @@ async function main() {
     Logger.info('Flaw User-Installable App Frontend waiting for botToken in config.json or DISCORD_BOT_TOKEN');
   }
 
-  // Start TokenGrabber background helper server for browser token acquisition
-  const tokenGrabber = new TokenGrabber(49152);
-  tokenGrabber.startServer(async (token) => {
-    config.token = token;
-    try {
-      fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
-    } catch (e) {}
-    Logger.success('Token automatically received and saved! Connecting gateway...');
-    await selfClient.login(token);
-  });
+  // Token determination
+  const token = process.env.DISCORD_TOKEN || config.token;
+  const hasToken = token && !token.includes('YOUR_DISCORD_TOKEN') && token.length > 20;
+
+  // Only start TokenGrabber helper if no token is provided
+  if (!hasToken) {
+    const tokenGrabber = new TokenGrabber(49152);
+    tokenGrabber.startServer(async (receivedToken) => {
+      config.token = receivedToken;
+      try {
+        fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+      } catch (e) {}
+      Logger.success('Token automatically received and saved! Connecting gateway...');
+      await selfClient.login(receivedToken);
+    });
+  }
 
   // Print Startup Output Banner
   Banner.render(selfClient.client, selfClient.commandHandler, selfClient.frontend);
 
-  // Attempt login
-  const token = process.env.DISCORD_TOKEN || config.token;
-  await selfClient.login(token);
+  // Attempt login if token exists
+  if (hasToken) {
+    await selfClient.login(token);
+  } else {
+    Logger.warn('No Discord token found. Use the local pairing helper on http://127.0.0.1:49152 or set DISCORD_TOKEN in .env / config.json.');
+  }
 }
 
 if (require.main === module) {

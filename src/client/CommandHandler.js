@@ -55,6 +55,31 @@ class CommandHandler {
     }
   }
 
+  watchCommandsDir(dirPath) {
+    if (!fs.existsSync(dirPath) || this.watcher) return;
+    try {
+      this.watcher = fs.watch(dirPath, { recursive: true }, (eventType, filename) => {
+        if (!filename || !filename.endsWith('.js')) return;
+        const fullPath = path.join(dirPath, filename);
+        if (!fs.existsSync(fullPath)) return;
+
+        try {
+          const resolved = path.resolve(fullPath);
+          delete require.cache[resolved];
+          const cmdModule = require(resolved);
+          if (Array.isArray(cmdModule)) {
+            for (const c of cmdModule) this.register(c, fullPath);
+          } else if (cmdModule && typeof cmdModule === 'object') {
+            this.register(cmdModule, fullPath);
+          }
+          Logger.info(`Plugin / Command hot-reloaded: ${path.basename(filename)}`);
+        } catch (err) {
+          Logger.warn(`Hot-reload failed for ${filename}: ${err.message}`);
+        }
+      });
+    } catch {}
+  }
+
   get(nameOrAlias) {
     if (!nameOrAlias) return null;
     const lower = nameOrAlias.toLowerCase();
@@ -93,6 +118,16 @@ class CommandHandler {
         Logger.warn(`Unknown command: "${cmdName}". Type "help" or ".help" for a list of commands.`);
       }
       return;
+    }
+
+    // Permission scoping check
+    const callerId = ctx.author?.id || ctx.user?.id || (ctx.type === 'cli' ? 'owner' : null);
+    const ownerId = ctx.client?.config?.frontend?.ownerId || ctx.client?.config?.ownerId || '1449235608022286347';
+    const isOwner = callerId === 'owner' || callerId === ownerId || callerId === ctx.client?.user?.id;
+
+    if (command.requiresOwner && !isOwner) {
+      Logger.warn(`Unauthorized attempt to run owner-only command .${cmdName} by ${callerId}`);
+      return ctx.reply(`⛔ **Permission Denied**: \`.${cmdName}\` requires Primary Owner authorization.`);
     }
 
     ctx.commandName = cmdName;

@@ -17,6 +17,12 @@ class CommandValidator {
     cmd.description = cmd.description || 'No description provided.';
     cmd.usage = cmd.usage || `.${cmd.name}`;
     cmd.aliases = Array.isArray(cmd.aliases) ? cmd.aliases.map(a => String(a).toLowerCase().trim()) : [];
+    
+    // Permission scoping: high-risk categories require owner by default
+    const highRiskCategories = ['OP', 'Backup', 'Config', 'Admin'];
+    cmd.requiresOwner = Boolean(cmd.requiresOwner || cmd.ownerOnly || highRiskCategories.includes(cmd.category));
+    cmd.minAuthLevel = typeof cmd.minAuthLevel === 'number' ? cmd.minAuthLevel : (cmd.requiresOwner ? 2 : 1);
+    
     return cmd;
   }
 }

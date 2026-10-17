@@ -3,6 +3,8 @@ const CommandHandler = require('./CommandHandler');
 const Context = require('./Context');
 const AntiDetection = require('./AntiDetection');
 const WebhookLogger = require('./WebhookLogger');
+const RateLimitBuckets = require('./RateLimitBuckets');
+const DiscordAdapter = require('./DiscordAdapter');
 const Logger = require('../utils/Logger');
 const Storage = require('../utils/Storage');
 const fs = require('fs');
@@ -31,8 +33,12 @@ class SelfClient {
       }
     });
     this.commandHandler = new CommandHandler(this.client);
+    this.rateLimitBuckets = new RateLimitBuckets();
+    this.adapter = new DiscordAdapter(this.client);
     this.client.config = this.config;
     this.client.selfClient = this;
+    this.client.rateLimitBuckets = this.rateLimitBuckets;
+    this.client.adapter = this.adapter;
     this.activeChannel = null;
     this.tuiManager = null;
 
@@ -176,26 +182,38 @@ class SelfClient {
       Logger.warn('No valid Discord token provided in config.json. Running in Offline/TUI Preview mode.');
       return false;
     }
-    try {
-      const FingerprintCloak = require('./FingerprintCloak');
-      const gwProps = await FingerprintCloak.getGatewayProperties();
-      if (this.client.options && this.client.options.ws) {
-        this.client.options.ws.properties = gwProps;
-      }
-      if (this.client.options && this.client.options.http) {
-        this.client.options.http.headers = {
-          ...this.client.options.http.headers,
-          ...FingerprintCloak.getHttpHeaders()
-        };
-      }
-      Logger.info(`Fingerprint Cloak active: Mozilla Firefox v${FingerprintCloak.browserVersion} (Build: ${gwProps.client_build_number})`);
+    const maxRetries = 5;
+    let attempt = 0;
 
-      await this.client.login(effectiveToken);
-      return true;
-    } catch (err) {
-      Logger.error(`Login failed: ${err.message}`);
-      return false;
+    while (attempt < maxRetries) {
+      attempt++;
+      try {
+        const FingerprintCloak = require('./FingerprintCloak');
+        const gwProps = await FingerprintCloak.getGatewayProperties();
+        if (this.client.options && this.client.options.ws) {
+          this.client.options.ws.properties = gwProps;
+        }
+        if (this.client.options && this.client.options.http) {
+          this.client.options.http.headers = {
+            ...this.client.options.http.headers,
+            ...FingerprintCloak.getHttpHeaders()
+          };
+        }
+        Logger.info(`Fingerprint Cloak active: Mozilla Firefox v${FingerprintCloak.browserVersion} (Build: ${gwProps.client_build_number})`);
+
+        await this.client.login(effectiveToken);
+        return true;
+      } catch (err) {
+        const backoffMs = Math.min(1000 * Math.pow(2, attempt), 16000);
+        Logger.error(`Login attempt ${attempt}/${maxRetries} failed: ${err.message}. Retrying in ${backoffMs / 1000}s...`);
+        if (attempt >= maxRetries) {
+          Logger.error('Maximum gateway login retry attempts reached.');
+          return false;
+        }
+        await new Promise(r => setTimeout(r, backoffMs));
+      }
     }
+    return false;
   }
 
   executeTuiCommand(inputStr) {

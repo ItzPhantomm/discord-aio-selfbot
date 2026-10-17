@@ -80,12 +80,7 @@ class RateLimitBuckets {
 
   // Enforces humanized pacing and bucket acquisition before sending a message
   async acquireMessagePermission(channel, isDM = false, recipientId = null, fastMode = false) {
-    if (fastMode) {
-      // Fast Mode: instant response text without wait/throttle jitter while preserving basic global safety
-      return true;
-    }
-
-    // 1. Acquire global token
+    // 1. Always acquire global token even in Fast Mode (prevents gateway burst bans)
     await this.globalBucket.acquire(1);
 
     const now = Date.now();
@@ -93,11 +88,13 @@ class RateLimitBuckets {
     const lastTime = this.lastActionTimestamps.get(targetKey) || 0;
     const elapsed = now - lastTime;
 
-    // Minimum human pacing between messages to the same destination
-    const minDelay = isDM ? 1400 : 900;
-    if (elapsed < minDelay) {
-      const waitMs = minDelay - elapsed + Math.floor(Math.random() * 400);
-      await new Promise(r => setTimeout(r, waitMs));
+    // In normal mode: enforce minimum human pacing between messages to the same destination
+    if (!fastMode) {
+      const minDelay = isDM ? 1400 : 900;
+      if (elapsed < minDelay) {
+        const waitMs = minDelay - elapsed + Math.floor(Math.random() * 400);
+        await new Promise(r => setTimeout(r, waitMs));
+      }
     }
 
     if (isDM) {
@@ -146,5 +143,11 @@ class RateLimitBuckets {
   }
 }
 
-module.exports = new RateLimitBuckets();
+const defaultInstance = new RateLimitBuckets();
+
+module.exports = RateLimitBuckets;
 module.exports.RateLimitBuckets = RateLimitBuckets;
+module.exports.default = defaultInstance;
+// Proxied methods for backwards compatibility
+module.exports.acquireMessagePermission = defaultInstance.acquireMessagePermission.bind(defaultInstance);
+module.exports.syncBeforeSend = defaultInstance.syncBeforeSend.bind(defaultInstance);

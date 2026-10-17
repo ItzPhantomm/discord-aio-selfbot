@@ -73,6 +73,9 @@ class Logger {
     // Text inside of logs is always pure, crisp bright white: \x1b[1m\x1b[97m
     const formatted = `${timeFormatted} ${badgeFormatted} \x1b[1m\x1b[97m${sanitizedMsg}\x1b[0m`;
 
+    const cleanText = `[${time}] [${tag}] ${sanitizedMsg}`.replace(/\x1b\[[0-9;]*m/g, '');
+    this.writeToDisk(cleanText);
+
     if (this.isPaused) {
       this.pausedBuffer.push(formatted);
       return;
@@ -83,6 +86,30 @@ class Logger {
     } else {
       console.log(formatted);
     }
+  }
+
+  writeToDisk(plainText) {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const logDir = path.join(__dirname, '../../data/logs');
+      if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+      const logFile = path.join(logDir, 'flaw.log');
+
+      // Check file size for rotation (5MB cap)
+      if (fs.existsSync(logFile)) {
+        const stats = fs.statSync(logFile);
+        if (stats.size > 5 * 1024 * 1024) {
+          const logFileOld = path.join(logDir, 'flaw.log.1');
+          if (fs.existsSync(logFileOld)) {
+            try { fs.unlinkSync(logFileOld); } catch {}
+          }
+          fs.renameSync(logFile, logFileOld);
+        }
+      }
+
+      fs.appendFileSync(logFile, plainText + '\n', 'utf-8');
+    } catch {}
   }
 
   cmd(msg) {

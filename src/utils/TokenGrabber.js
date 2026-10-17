@@ -1,20 +1,26 @@
 const http = require('http');
-const Logger = require('../utils/Logger');
+const crypto = require('crypto');
+const Logger = require('./Logger');
 
 /**
- * Mobile-Optimized Discord Token Extractor & Auto-Sync Server
- * Starts an interactive web portal accessible from phone browsers.
- * Features 1-Tap Bookmarklet, Instant Console Copy, and Direct Browser Session Extractor.
+ * Hardened Local Discord Token Extractor & Auto-Sync Server
+ * - Binds strictly to 127.0.0.1 (loopback interface only)
+ * - Requires a cryptographically generated one-time pairing code
+ * - Validates Origin/Referer to reject unauthorized origins
+ * - Automatically shuts down after first successful token submission or after 5-minute timeout
  */
 class TokenGrabber {
   constructor(port = 49152) {
     this.port = port;
     this.server = null;
     this.tokenReceivedCallback = null;
+    this.pairingCode = crypto.randomBytes(3).toString('hex').toUpperCase(); // 6-char hex code
+    this.timeoutTimer = null;
+    this.isCompleted = false;
   }
 
-  // Pure JavaScript browser snippet for extracting Discord token
-  static getConsoleSnippet(localPort = 49152) {
+  // Pure JavaScript browser snippet for extracting Discord token with pairing code verification
+  static getConsoleSnippet(localPort = 49152, pairingCode = '') {
     return `(function(){
   try {
     let token = null;
@@ -41,13 +47,14 @@ class TokenGrabber {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(token).catch(()=>{});
       }
-      const targetHost = (window.location && window.location.hostname && window.location.hostname !== 'discord.com') ? window.location.hostname : '127.0.0.1';
-      fetch('http://' + targetHost + ':${localPort}/submit?token=' + encodeURIComponent(token), { mode: 'no-cors' }).catch(()=>{});
-      fetch('http://127.0.0.1:${localPort}/submit?token=' + encodeURIComponent(token), { mode: 'no-cors' }).catch(()=>{});
-      alert('✅ Discord Token Captured & Transferred to Selfbot!\n\nToken: ' + token.slice(0, 15) + '...');
+      const codeParam = encodeURIComponent('${pairingCode}');
+      const tokenParam = encodeURIComponent(token);
+      fetch('http://127.0.0.1:${localPort}/submit?token=' + tokenParam + '&code=' + codeParam, { mode: 'cors' })
+        .then(() => alert('Discord Token securely verified & transferred to Selfbot!'))
+        .catch(() => alert('Transferred to local loopback listener.'));
       return token;
     } else {
-      alert('⚠️ Could not extract token. Please ensure you are logged into discord.com/app in this browser tab!');
+      alert('Could not extract token. Please ensure you are logged into discord.com/app in this browser tab.');
     }
   } catch(e) {
     alert('Extraction Error: ' + e.message);
@@ -55,30 +62,61 @@ class TokenGrabber {
 })();`.replace(/\n\s*/g, ' ');
   }
 
-  static getBookmarklet(localPort = 49152) {
-    return `javascript:${encodeURIComponent(TokenGrabber.getConsoleSnippet(localPort))}`;
+  static getBookmarklet(localPort = 49152, pairingCode = '') {
+    return `javascript:${encodeURIComponent(TokenGrabber.getConsoleSnippet(localPort, pairingCode))}`;
+  }
+
+  isOriginAllowed(origin) {
+    if (!origin) return true; // Direct local navigation without origin header
+    try {
+      const parsed = new URL(origin);
+      if (parsed.hostname === '127.0.0.1' || parsed.hostname === 'localhost') return true;
+      if (parsed.hostname === 'discord.com' || parsed.hostname.endsWith('.discord.com')) return true;
+    } catch {
+      return false;
+    }
+    return false;
   }
 
   startServer(onTokenReceived) {
-    if (this.server) return;
+    if (this.server || this.isCompleted) return;
     this.tokenReceivedCallback = onTokenReceived;
 
     this.server = http.createServer((req, res) => {
-      // Enable CORS for cross-origin mobile browser submission
-      res.setHeader('Access-Control-Allow-Origin', '*');
+      const origin = req.headers.origin || req.headers.referer;
+
+      if (origin && !this.isOriginAllowed(origin)) {
+        res.writeHead(403, { 'Content-Type': 'text/plain' });
+        return res.end('Forbidden: Unauthorized Origin');
+      }
+
+      // Restrict CORS strictly to allowed origins
+      const allowedOrigin = (origin && this.isOriginAllowed(origin)) ? origin : `http://127.0.0.1:${this.port}`;
+      res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
       if (req.method === 'OPTIONS') {
-        res.writeHead(200);
+        res.writeHead(204);
         return res.end();
       }
 
-      const urlObj = new URL(req.url, `http://${req.headers.host || '127.0.0.1'}`);
+      const urlObj = new URL(req.url, `http://127.0.0.1:${this.port}`);
 
-      // Token submission endpoint
+      // Token submission endpoint with pairing code verification
       if (urlObj.pathname === '/submit') {
         const token = urlObj.searchParams.get('token');
+        const code = urlObj.searchParams.get('code');
+
+        if (!code || code.toUpperCase() !== this.pairingCode) {
+          Logger.warn(`TokenGrabber rejected unauthorized submission attempt (invalid pairing code).`);
+          res.writeHead(401, { 'Content-Type': 'text/html; charset=utf-8' });
+          return res.end(`<!DOCTYPE html><html><body style="background:#000;color:#ff5555;font-family:sans-serif;text-align:center;padding:50px;">
+            <h2>401 Unauthorized</h2>
+            <p>Invalid or missing one-time pairing code.</p>
+          </body></html>`);
+        }
+
         if (token && token.length > 20) {
           res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
           res.end(`<!DOCTYPE html>
@@ -87,257 +125,120 @@ class TokenGrabber {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Token Received</title>
   <style>
-    body { background: #000; color: #fff; font-family: system-ui, -apple-system, sans-serif; text-align: center; padding: 40px 20px; }
-    .card { background: #111; border: 1px solid #333; border-radius: 12px; padding: 30px; max-width: 450px; margin: 0 auto; }
-    h2 { color: #57E6A5; margin-top: 0; }
+    body { background: #0b0c0e; color: #fff; font-family: system-ui, -apple-system, sans-serif; text-align: center; padding: 40px 20px; }
+    .card { background: #121418; border: 1px solid #222; border-radius: 12px; padding: 30px; max-width: 450px; margin: 0 auto; }
+    h2 { color: #C8FF64; margin-top: 0; }
     p { color: #aaa; font-size: 15px; line-height: 1.5; }
-    .badge { background: #222; border: 1px solid #444; border-radius: 6px; padding: 10px; font-family: monospace; word-break: break-all; margin: 15px 0; color: #fff; }
+    .badge { background: #1a1d24; border: 1px solid #333; border-radius: 6px; padding: 10px; font-family: monospace; word-break: break-all; margin: 15px 0; color: #C8FF64; }
   </style>
 </head>
 <body>
   <div class="card">
-    <h2>✅ TOKEN RECEIVED</h2>
-    <p>Your authorization token was transferred to the Discord Selfbot and saved to config.json automatically.</p>
+    <h2>AUTHENTICATED & TRANSFERRED</h2>
+    <p>Pairing code verified. Your authorization token was safely transferred to the Flaw engine.</p>
     <div class="badge">${token.slice(0, 15)}...${token.slice(-6)}</div>
-    <p>You can close this tab and return to your terminal.</p>
+    <p>The local helper server is now closed. Return to your terminal.</p>
   </div>
 </body>
 </html>`);
 
-          Logger.success(`Token received via Mobile Browser Portal! Account connecting...`);
+          Logger.success(`Token successfully verified with pairing code ${this.pairingCode}! Connecting gateway...`);
+          this.isCompleted = true;
+
+          // Dispatch callback
           if (this.tokenReceivedCallback) {
             this.tokenReceivedCallback(token);
           }
+
+          // Automatically shut down server immediately after first use
+          setImmediate(() => {
+            this.stopServer();
+            Logger.info('TokenGrabber helper server closed automatically after successful acquisition.');
+          });
           return;
         }
       }
 
-      // Root Mobile Token Extractor Portal
+      // Root Local Token Extractor Portal (requires pairing code in query or shows pairing prompt)
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      const jsSnippet = TokenGrabber.getConsoleSnippet(this.port);
-      const bookmarkletLink = TokenGrabber.getBookmarklet(this.port);
+      const jsSnippet = TokenGrabber.getConsoleSnippet(this.port, this.pairingCode);
+      const bookmarkletLink = TokenGrabber.getBookmarklet(this.port, this.pairingCode);
 
       res.end(`<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <title>Discord Mobile Token Extractor</title>
+  <title>Flaw Token Setup</title>
   <style>
     * { box-sizing: border-box; }
-    body {
-      background: #000000;
-      color: #FFFFFF;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      display: flex;
-      justify-content: center;
-    }
-    .container {
-      width: 100%;
-      max-width: 520px;
-      background: #080808;
-      border: 1px solid #222222;
-      border-radius: 16px;
-      padding: 24px;
-    }
-    .header {
-      text-align: center;
-      margin-bottom: 24px;
-    }
-    .header h1 {
-      font-size: 20px;
-      margin: 0 0 8px 0;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-    }
-    .header p {
-      color: #888888;
-      font-size: 13px;
-      margin: 0;
-      line-height: 1.4;
-    }
-    .step-card {
-      background: #111111;
-      border: 1px solid #222222;
-      border-radius: 12px;
-      padding: 18px;
-      margin-bottom: 16px;
-    }
-    .step-card h3 {
-      font-size: 14px;
-      margin: 0 0 10px 0;
-      display: flex;
-      align-items: center;
-      color: #FFFFFF;
-    }
-    .badge-num {
-      background: #FFFFFF;
-      color: #000000;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: bold;
-      margin-right: 8px;
-    }
-    .desc {
-      font-size: 13px;
-      color: #999999;
-      line-height: 1.5;
-      margin-bottom: 14px;
-    }
-    .btn {
-      display: block;
-      width: 100%;
-      padding: 14px;
-      background: #FFFFFF;
-      color: #000000;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      text-align: center;
-      text-decoration: none;
-      cursor: pointer;
-      transition: opacity 0.2s;
-    }
-    .btn:active {
-      opacity: 0.8;
-    }
-    .btn-secondary {
-      background: #1A1A1A;
-      color: #FFFFFF;
-      border: 1px solid #333333;
-    }
-    .code-box {
-      background: #000000;
-      border: 1px solid #222222;
-      border-radius: 6px;
-      padding: 12px;
-      font-family: monospace;
-      font-size: 11px;
-      color: #CCCCCC;
-      word-break: break-all;
-      max-height: 90px;
-      overflow-y: auto;
-      margin-bottom: 10px;
-    }
-    .status-area {
-      text-align: center;
-      padding: 12px;
-      border-radius: 8px;
-      background: #111111;
-      border: 1px dashed #333333;
-      font-size: 12px;
-      color: #777777;
-    }
-    .toast {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #57E6A5;
-      color: #000000;
-      padding: 10px 20px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: bold;
-      display: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-    }
+    body { background: #0b0c0e; color: #FFFFFF; font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 20px; display: flex; justify-content: center; }
+    .container { width: 100%; max-width: 520px; background: #111317; border: 1px solid #222; border-radius: 14px; padding: 24px; }
+    h1 { font-size: 18px; margin: 0 0 6px 0; color: #C8FF64; }
+    p { font-size: 13px; color: #888; margin: 0 0 16px 0; }
+    .pin-box { background: #1a1d24; border: 1px dashed #C8FF64; border-radius: 8px; padding: 12px; margin-bottom: 20px; text-align: center; }
+    .pin-code { font-family: monospace; font-size: 20px; font-weight: bold; color: #C8FF64; letter-spacing: 3px; }
+    .card { background: #16191f; border: 1px solid #252830; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+    .btn { background: #C8FF64; color: #000; font-weight: bold; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; width: 100%; font-size: 13px; }
+    .btn-secondary { background: #222630; color: #fff; margin-top: 8px; }
+    input { width: 100%; padding: 10px; background: #0b0c0e; border: 1px solid #333; color: #fff; border-radius: 6px; font-size: 13px; margin-bottom: 10px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="header">
-      <h1>◈ DISCORD TOKEN EXTRACTOR</h1>
-      <p>1-Tap Mobile Browser Extraction & Auto-Sync to Terminal</p>
+    <h1>FLAW TOKEN HELPER</h1>
+    <p>Local loopback token transfer with one-time authentication.</p>
+    <div class="pin-box">
+      <div style="font-size:11px;color:#aaa;margin-bottom:4px;">ONE-TIME PAIRING CODE</div>
+      <div class="pin-code">${this.pairingCode}</div>
     </div>
-
-    <!-- METHOD 1: Mobile 1-Tap Copy & Discord Launch -->
-    <div class="step-card">
-      <h3><span class="badge-num">1</span> Recommended for Mobile (Chrome / Kiwi / Safari)</h3>
-      <div class="desc">
-        Click below to copy the JS extractor. Then open Discord Web, paste into URL bar with <code>javascript:</code> in front (or inspect console), and your token auto-syncs!
-      </div>
-      <button class="btn" onclick="copyJsCode()">📋 Copy JS Extractor Code</button>
-      <div style="height: 10px;"></div>
-      <a href="https://discord.com/app" target="_blank" class="btn btn-secondary">🌐 Open Discord Web in New Tab</a>
+    <div class="card">
+      <div style="font-weight:bold;font-size:14px;margin-bottom:8px;">1. Browser Extractor</div>
+      <p>Copy the verified snippet and run it in your logged-in discord.com tab:</p>
+      <button class="btn" onclick="copyJsCode()">Copy Authenticated Snippet</button>
     </div>
-
-    <!-- METHOD 2: Direct Token Input & Sync -->
-    <div class="step-card">
-      <h3><span class="badge-num">2</span> Manual / Direct Token Paste</h3>
-      <div class="desc">
-        Already have your token? Paste it directly here and tap Sync to transfer it into the running terminal selfbot without restarting.
-      </div>
-      <input type="text" id="manualToken" placeholder="Paste Discord token here..." style="width:100%;padding:12px;background:#000;border:1px solid #333;color:#fff;border-radius:8px;font-size:13px;margin-bottom:10px;">
-      <button class="btn btn-secondary" onclick="submitManualToken()">⚡ Sync Token to Selfbot</button>
-    </div>
-
-    <!-- Raw JS Reference -->
-    <div class="step-card">
-      <h3><span class="badge-num">3</span> Extractor Code Reference</h3>
-      <div class="code-box" id="codeText">${jsSnippet}</div>
-      <button class="btn btn-secondary" style="font-size:12px;padding:8px;" onclick="copyBookmarklet()">Copy Bookmarklet URL</button>
-    </div>
-
-    <div class="status-area" id="statusMsg">
-      🟢 Bridge Server Active on Port ${this.port}
+    <div class="card">
+      <div style="font-weight:bold;font-size:14px;margin-bottom:8px;">2. Direct Paste</div>
+      <input type="text" id="manualToken" placeholder="Paste Discord token here...">
+      <button class="btn btn-secondary" onclick="submitManualToken()">Verify & Sync</button>
     </div>
   </div>
-
-  <div class="toast" id="toast">Copied to Clipboard!</div>
-
   <script>
     const jsCode = ${JSON.stringify(jsSnippet)};
-    const bookmarkletUrl = ${JSON.stringify(bookmarkletLink)};
-
-    function showToast(text) {
-      const t = document.getElementById('toast');
-      t.innerText = text;
-      t.style.display = 'block';
-      setTimeout(() => { t.style.display = 'none'; }, 2500);
-    }
-
     function copyJsCode() {
-      navigator.clipboard.writeText(jsCode).then(() => {
-        showToast('✅ Extractor Code Copied! Now open Discord Web');
-      }).catch(() => {
-        showToast('Please copy code manually from box below');
-      });
+      navigator.clipboard.writeText(jsCode).then(() => alert('Snippet copied! Paste into discord.com browser console.')).catch(() => prompt('Copy code manually:', jsCode));
     }
-
-    function copyBookmarklet() {
-      navigator.clipboard.writeText(bookmarkletUrl).then(() => {
-        showToast('✅ Bookmarklet URL Copied!');
-      });
-    }
-
     function submitManualToken() {
       const val = document.getElementById('manualToken').value.trim();
-      if (!val) return alert('Please enter token.');
-      window.location.href = '/submit?token=' + encodeURIComponent(val);
+      if (!val) return alert('Token required');
+      window.location.href = '/submit?token=' + encodeURIComponent(val) + '&code=' + encodeURIComponent('${this.pairingCode}');
     }
   </script>
 </body>
 </html>`);
     });
 
-    // Listen on 0.0.0.0 so phone on same Wi-Fi / localhost can connect
-    this.server.listen(this.port, '0.0.0.0', () => {
-      Logger.info(`Mobile Token Extractor Web Portal ready on http://localhost:${this.port}`);
-    }).on('error', (err) => {
-      // Ignore if port already occupied
+    // Bind strictly to 127.0.0.1 (never 0.0.0.0)
+    this.server.listen(this.port, '127.0.0.1', () => {
+      Logger.info(`Token Setup Helper listening on http://127.0.0.1:${this.port} [Pairing Code: ${this.pairingCode}]`);
+    }).on('error', () => {
+      // Port in use or permission denied
     });
+
+    // Auto-close after 5 minutes to prevent leaving server open indefinitely
+    this.timeoutTimer = setTimeout(() => {
+      if (!this.isCompleted && this.server) {
+        Logger.info('TokenGrabber 5-minute timeout reached. Closing listener.');
+        this.stopServer();
+      }
+    }, 5 * 60 * 1000);
   }
 
   stopServer() {
+    if (this.timeoutTimer) {
+      clearTimeout(this.timeoutTimer);
+      this.timeoutTimer = null;
+    }
     if (this.server) {
       this.server.close();
       this.server = null;

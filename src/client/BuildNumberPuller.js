@@ -82,7 +82,10 @@ class BuildNumberPuller {
             const match = js.match(/buildNumber:"(\d+)"/i) ||
                           js.match(/BuildNumber:"(\d+)"/i) ||
                           js.match(/build_number:"(\d+)"/i) ||
-                          js.match(/"client_build_number",(\d+)/i);
+                          js.match(/"client_build_number",(\d+)/i) ||
+                          js.match(/build_number\s*:\s*(\d{6,})/i) ||
+                          js.match(/"build_number"\s*:\s*(\d{6,})/i) ||
+                          js.match(/buildNumber\s*:\s*(\d{6,})/i);
 
             if (match && match[1]) {
               const buildNumber = parseInt(match[1], 10);
@@ -95,6 +98,23 @@ class BuildNumberPuller {
           } catch {}
         }
       }
+
+      // Secondary fallback source: inspect Discord API gateway build telemetry
+      try {
+        Logger.info('Attempting secondary fallback for build number...');
+        const apiRes = await fetch('https://discord.com/api/v9/experiments', {
+          headers: { 'User-Agent': this.firefoxUserAgent }
+        });
+        if (apiRes.ok) {
+          const apiData = await apiRes.json();
+          const candidate = apiData?.fingerprint?.match?.(/(\d{6})/)?.[1];
+          if (candidate) {
+            const num = parseInt(candidate, 10);
+            this.cachedBuild = num;
+            return num;
+          }
+        }
+      } catch {}
     } catch (err) {
       Logger.warn(`Failed to pull live Discord build number (${err.message}). Using verified fallback.`);
     }

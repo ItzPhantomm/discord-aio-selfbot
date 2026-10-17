@@ -371,34 +371,32 @@ module.exports = [
   {
     name: 'tokenhelper',
     category: 'User',
-    description: 'Start and open mobile web portal with 1-tap JS code extractor to capture your Discord token on mobile',
+    description: 'Start secure local helper to capture or transfer Discord token with one-time pairing code',
     usage: '.tokenhelper',
     aliases: ['gettoken', 'grabtoken', 'tokengrabber', 'mobiletoken'],
     run: async (ctx) => {
       const port = 49152;
-      const snippet = TokenGrabber.getConsoleSnippet(port);
-      const bookmarklet = TokenGrabber.getBookmarklet(port);
+      const grabber = new TokenGrabber(port);
+      grabber.startServer((token) => {
+        if (ctx.client?.selfClient) {
+          ctx.client.selfClient.login(token);
+        }
+      });
 
-      return ctx.reply(`### 📱 MOBILE DISCORD TOKEN EXTRACTOR WEB PORTAL
-> Capture your token directly from your phone browser without installing extra apps:
+      const snippet = TokenGrabber.getConsoleSnippet(port, grabber.pairingCode);
+      const bookmarklet = TokenGrabber.getBookmarklet(port, grabber.pairingCode);
 
-* **⚡ Method 1: Mobile Web Portal (1-Tap Copy & Sync)**
-  Open this link on your phone:
-  👉 **http://localhost:${port}** *(or your local device IP on Wi-Fi)*
-  *(Tap the button to copy JS code, open Discord Web, and your account syncs automatically)*
+      return ctx.reply(`### 🔐 SECURE LOCAL TOKEN SETUP HELPER
+> Bound strictly to \`127.0.0.1\` with one-time pairing authentication:
 
-* **💻 Method 2: Paste JS Code into Discord Console**
-  1. Open \`https://discord.com/app\` in mobile browser (Kiwi/Chrome/Safari)
-  2. Paste this code block and run:
+* **One-Time Pairing PIN:** \`${grabber.pairingCode}\`
+* **Local Portal:** \`http://127.0.0.1:${port}\` *(Auto-closes after first use or 5 min)*
+
+* **Browser Console Snippet:**
 \`\`\`js
 ${snippet}
 \`\`\`
-
-* **🔖 Method 3: Mobile Bookmarklet**
-\`\`\`
-${bookmarklet}
-\`\`\`
-*(When run in Discord tab, token is copied and pushed to selfbot instantly)*`);
+*(Run in \`discord.com\` console; transfers token securely to local listener with PIN verification)*`);
     }
   },
   {
